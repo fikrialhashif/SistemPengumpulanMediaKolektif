@@ -98,7 +98,7 @@ class MediaController extends Controller
 
     public function show(Request $request, $id)
     {
-        $media = Media::with(['department', 'uploader', 'category'])->findOrFail($id);
+        $media = Media::with(['department', 'uploader', 'category', 'files'])->findOrFail($id);
         $user = $request->user();
 
         if (!$this->userCanAccess($media, $user)) {
@@ -131,14 +131,14 @@ class MediaController extends Controller
             }
         }
 
-        $file = $request->file('file');
-        $media = $this->mediaService->upload($file, $validated);
+        $files = $request->file('files');
+        $media = $this->mediaService->upload($files, $validated);
 
-        ActivityLogService::log('UPLOAD_MEDIA', $media->id, "Upload media: {$media->title} oleh {$user->name}");
+        ActivityLogService::log('UPLOAD_MEDIA', $media->id, "Upload media: {$media->title} ({$media->files->count()} file) oleh {$user->name}");
 
         return response()->json([
             'success' => true,
-            'data' => new MediaResource($media),
+            'data' => new MediaResource($media->load('files')),
             'message' => 'Media berhasil diunggah'
         ], 201);
     }
@@ -167,13 +167,13 @@ class MediaController extends Controller
             $request->merge(['department_id' => $media->department_id]);
         }
 
-        $media = $this->mediaService->update($media, $request->validated(), $request->file('file'));
+        $media = $this->mediaService->update($media, $request->validated(), $request->file('files'));
 
         ActivityLogService::log('UPDATE_MEDIA', $media->id, "Update media: {$media->title}");
 
         return response()->json([
             'success' => true,
-            'data' => new MediaResource($media),
+            'data' => new MediaResource($media->load('files')),
             'message' => 'Media berhasil diperbarui'
         ], 200);
     }
@@ -210,7 +210,7 @@ class MediaController extends Controller
 
     public function download(Request $request, $id)
     {
-        $media = Media::findOrFail($id);
+        $media = Media::with('files')->findOrFail($id);
         $user = $request->user();
 
         if (!$this->userCanAccess($media, $user)) {
@@ -220,22 +220,105 @@ class MediaController extends Controller
             ], 403);
         }
 
-        if (!Storage::disk('local')->exists($media->file_path)) {
+        $files = $media->files && $media->files->isNotEmpty()
+            ? $media->files
+            : collect([
+                (object)[
+                    'file_path' => $media->file_path,
+                    'file_name' => $media->file_name,
+                    'file_type' => $media->file_type,
+                    'file_size' => $media->file_size,
+                ]
+            ]);
+
+        $disk = Storage::disk(config('filesystems.default', 'public'));
+
+        if ($files->count() === 1) {
+            $file = $files->first();
+
+            if (!$disk->exists($file->file_path)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File tidak ditemukan.'
+                ], 404);
+            }
+
+            ActivityLogService::log('DOWNLOAD_MEDIA', $media->id, "Download media: {$media->title} oleh {$user->name}");
+
+            $path = $disk->path($file->file_path);
+            $headers = [
+                'Content-Type' => $file->file_type,
+                'Content-Disposition' => 'attachment; filename="' . $file->file_name . '"',
+            ];
+
+            return response()->download($path, $file->file_name, $headers);
+        }
+
+        // Multiple files - zip them
+        $tmpFile = tempnam(sys_get_temp_dir(), 'mediakolektif_');
+        $zip = new \ZipArchive();
+        $zip->open($tmpFile, \ZipArchive::OVERWRITE);
+
+        foreach ($files as $file) {
+            if (!$disk->exists($file->file_path)) {
+                continue;
+            }
+            $localPath = $disk->path($file->file_path);
+            $zip->addFile($localPath, $file->file_name);
+        }
+        $zip->close();
+
+        ActivityLogService::log('DOWNLOAD_MEDIA', $media->id, "Download media (ZIP - {$files->count()} files): {$media->title} oleh {$user->name}");
+
+        $zipName = $media->title . '_files.zip';
+
+        return response()->download($tmpFile, $zipName, [
+            'Content-Type' => 'application/zip',
+            'Content-Transfer-Encoding' => 'binary',
+            'Pragma' => 'public',
+            'Expires' => '0',
+        ]);
+    }
+
+    public function downloadFile(Request $request, $id, $fileId)
+    {
+        $media = Media::with('files')->findOrFail($id);
+        $user = $request->user();
+
+        if (!$this->userCanAccess($media, $user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses untuk mengunduh media ini.'
+            ], 403);
+        }
+
+        $file = $media->files->firstWhere('id', $fileId);
+
+        if (!$file) {
             return response()->json([
                 'success' => false,
                 'message' => 'File tidak ditemukan.'
             ], 404);
         }
 
-        ActivityLogService::log('DOWNLOAD_MEDIA', $media->id, "Download media: {$media->title} oleh {$user->name}");
+        $disk = Storage::disk(config('filesystems.default', 'public'));
 
-        $path = Storage::disk('local')->path($media->file_path);
+        if (!$disk->exists($file->file_path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File tidak ditemukan di storage.'
+            ], 404);
+        }
+
+        ActivityLogService::log('DOWNLOAD_MEDIA', $media->id, "Download file: {$file->file_name} dari media: {$media->title} oleh {$user->name}");
+
+        $path = $disk->path($file->file_path);
         $headers = [
-            'Content-Type' => $media->file_type,
-            'Content-Disposition' => 'attachment; filename="' . $media->file_name . '"',
+            'Content-Type' => $file->file_type,
+            'Content-Disposition' => 'attachment; filename="' . $file->file_name . '"',
         ];
 
-        return response()->download($path, $media->file_name, $headers);
+        return response()->download($path, $file->file_name, $headers);
     }
 
     public function trash(Request $request)

@@ -30,15 +30,17 @@ Route::middleware('auth:sanctum')->group(function () {
     // Media
     Route::get('/media', [MediaController::class, 'index']);
     Route::post('/media', [MediaController::class, 'store']);
+
+    // Recycle bin (harus sebelum /media/{id} agar tidak bentrok)
+    Route::get('/media/trash', [MediaController::class, 'trash']);
+    Route::post('/media/{id}/restore', [MediaController::class, 'restore']);
+    Route::delete('/media/{id}/force', [MediaController::class, 'forceDelete']);
+
     Route::get('/media/{id}', [MediaController::class, 'show']);
     Route::put('/media/{id}', [MediaController::class, 'update']);
     Route::delete('/media/{id}', [MediaController::class, 'destroy']);
     Route::get('/media/{id}/download', [MediaController::class, 'download']);
-
-    // Recycle bin
-    Route::get('/media/trash', [MediaController::class, 'trash']);
-    Route::post('/media/{id}/restore', [MediaController::class, 'restore']);
-    Route::delete('/media/{id}/force', [MediaController::class, 'forceDelete']);
+    Route::get('/media/{id}/files/{fileId}/download', [MediaController::class, 'downloadFile']);
 
     // Users
     Route::get('/users', [UserController::class, 'index']);

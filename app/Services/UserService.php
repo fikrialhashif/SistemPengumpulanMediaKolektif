@@ -13,7 +13,7 @@ class UserService
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'department_id' => $data['department_id'],
+            'department_id' => $data['department_id'] ?? null,
             'role_id' => $data['role_id'],
             'status' => 'ACTIVE',
         ]);
@@ -26,7 +26,7 @@ class UserService
         $updateData = [
             'name' => $data['name'] ?? $user->name,
             'email' => $data['email'] ?? $user->email,
-            'department_id' => $data['department_id'] ?? $user->department_id,
+            'department_id' => array_key_exists('department_id', $data) ? $data['department_id'] : $user->department_id,
             'role_id' => $data['role_id'] ?? $user->role_id,
             'status' => $data['status'] ?? $user->status,
         ];

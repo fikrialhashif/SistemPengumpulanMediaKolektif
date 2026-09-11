@@ -19,7 +19,7 @@ class UserUpdateRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'email' => ['sometimes', 'required', 'string', 'email', 'max:255', 'unique:users,email,' . $userId],
             'password' => ['sometimes', 'nullable', 'string', 'min:8'],
-            'department_id' => ['sometimes', 'required', 'exists:master_departments,id'],
+            'department_id' => ['sometimes', 'nullable', 'exists:master_departments,id'],
             'role_id' => ['sometimes', 'required', 'exists:master_roles,id'],
             'status' => ['sometimes', 'required', 'in:ACTIVE,INACTIVE'],
         ];

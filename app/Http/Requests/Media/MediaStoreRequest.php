@@ -25,7 +25,8 @@ class MediaStoreRequest extends FormRequest
             'category_id' => ['required', 'exists:master_media_categories,id'],
             'event_date' => ['required', 'date'],
             'department_id' => ['nullable', 'exists:master_departments,id'],
-            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,mp4,mov,avi,mkv,webm,pdf,doc,docx,ppt,pptx'],
+            'files' => ['required', 'array', 'min:1'],
+            'files.*' => ['file', 'max:102400', 'mimes:jpg,jpeg,png,webp,mp4,mov,avi,mkv,webm,pdf,doc,docx,ppt,pptx'],
         ];
     }
 }

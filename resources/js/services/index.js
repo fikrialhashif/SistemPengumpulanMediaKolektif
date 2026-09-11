@@ -13,6 +13,7 @@ export const mediaService = {
   update: (id, formData, config = {}) => api.post(`/media/${id}?_method=PUT`, formData, { ...config, headers: { 'Content-Type': 'multipart/form-data' } }),
   delete: (id) => api.delete(`/media/${id}`),
   download: (id) => api.get(`/media/${id}/download`, { responseType: 'blob' }),
+  downloadFile: (id, fileId) => api.get(`/media/${id}/files/${fileId}/download`, { responseType: 'blob' }),
   trash: (params = {}) => api.get('/media/trash', { params }),
   restore: (id) => api.post(`/media/${id}/restore`),
   forceDelete: (id) => api.delete(`/media/${id}/force`),

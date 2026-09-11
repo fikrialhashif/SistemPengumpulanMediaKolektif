@@ -82,14 +82,6 @@ export default function AppRoutes() {
             </RoleBasedRoute>
           }
         />
-        <Route
-          path="activity-logs"
-          element={
-            <RoleBasedRoute roles={['SUPERADMIN']}>
-              <ActivityLogPage />
-            </RoleBasedRoute>
-          }
-        />
         <Route path="profile" element={<ProfilePage />} />
       </Route>
 

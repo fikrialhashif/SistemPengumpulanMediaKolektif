@@ -77,7 +77,7 @@ export default function UserListPage() {
                   <div className="text-sm text-slate-500">{u.email}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                  {u.department?.name}
+                  {u.role?.name === 'SUPERADMIN' ? '-' : u.department?.name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                   {u.role?.name}

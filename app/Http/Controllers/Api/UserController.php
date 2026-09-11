@@ -7,6 +7,7 @@ use App\Http\Requests\User\UserStoreRequest;
 use App\Http\Requests\User\UserUpdateRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\ActivityLogService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 
@@ -105,7 +106,7 @@ class UserController extends Controller
 
         $user = $this->userService->update($request->validated(), User::findOrFail($id));
 
-        ActivityLogService::log('UPDATE_USER', $user->id, "Update user: {$user->name}");
+        ActivityLogService::log('UPDATE_USER', null, "Update user: {$user->name}");
 
         return response()->json([
             'success' => true,
@@ -114,7 +115,7 @@ class UserController extends Controller
         ], 200);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         if ($request->user()->role->name !== 'SUPERADMIN') {
             return response()->json([
@@ -129,7 +130,7 @@ class UserController extends Controller
 
         $user->delete();
 
-        ActivityLogService::log('DELETE_USER', $userId, "Menghapus user: {$userName}");
+        ActivityLogService::log('DELETE_USER', null, "Menghapus user: {$userName}");
 
         return response()->json([
             'success' => true,
@@ -151,7 +152,7 @@ class UserController extends Controller
         $user->status = 'ACTIVE';
         $user->save();
 
-        ActivityLogService::log('ACTIVATE_USER', $user->id, "Aktifkan user: {$user->name}");
+        ActivityLogService::log('ACTIVATE_USER', null, "Aktifkan user: {$user->name}");
 
         return response()->json([
             'success' => true,
@@ -174,7 +175,7 @@ class UserController extends Controller
         $user->status = 'INACTIVE';
         $user->save();
 
-        ActivityLogService::log('DEACTIVATE_USER', $user->id, "Nonaktifkan user: {$user->name}");
+        ActivityLogService::log('DEACTIVATE_USER', null, "Nonaktifkan user: {$user->name}");
 
         return response()->json([
             'success' => true,

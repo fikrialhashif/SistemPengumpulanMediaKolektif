@@ -18,6 +18,8 @@ export default function ActivityLogPage() {
     activityLogService.list({ page: p }).then((res) => {
       setLogs(res.data.data);
       setMeta(res.data.meta);
+    }).catch(console.error)
+    .finally(() => {
       setLoading(false);
     });
   };
@@ -43,33 +45,41 @@ export default function ActivityLogPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
-            {logs.map((log) => (
-              <tr key={log.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-slate-500">
-                  {formatDateTime(log.created_at)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="font-medium text-slate-900">{log.user?.name || 'System'}</div>
-                  <div className="text-slate-500 text-xs">{log.user?.email}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                    log.action.includes('DELETE') ? 'bg-red-100 text-red-700' : 
-                    log.action.includes('UPLOAD') ? 'bg-green-100 text-green-700' :
-                    log.action.includes('LOGIN') ? 'bg-blue-100 text-blue-700' :
-                    'bg-slate-100 text-slate-700'
-                  }`}>
-                    {log.action}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-slate-700 max-w-xs truncate">
-                  {log.description}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-slate-500">
-                  {log.ip_address}
+            {logs.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="px-6 py-10 text-center text-slate-500">
+                  Belum ada log aktivitas
                 </td>
               </tr>
-            ))}
+            ) : (
+              logs.map((log) => (
+                <tr key={log.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-slate-500">
+                    {formatDateTime(log.created_at)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="font-medium text-slate-900">{log.user?.name || 'System'}</div>
+                    <div className="text-slate-500 text-xs">{log.user?.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                      (log.action || '').includes('DELETE') ? 'bg-red-100 text-red-700' : 
+                      (log.action || '').includes('UPLOAD') ? 'bg-green-100 text-green-700' :
+                      (log.action || '').includes('LOGIN') ? 'bg-blue-100 text-blue-700' :
+                      'bg-slate-100 text-slate-700'
+                    }`}>
+                      {log.action}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-slate-700 max-w-xs truncate">
+                    {log.description}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-slate-500">
+                    {log.ip_address}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

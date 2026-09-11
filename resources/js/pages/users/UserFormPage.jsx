@@ -51,7 +51,22 @@ export default function UserFormPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+      if (name === 'role_id') {
+        const selectedRole = roles.find(r => String(r.id) === String(value));
+        // Jika SUPERADMIN dipilih, kosongkan departemen
+        if (selectedRole?.name === 'SUPERADMIN') {
+          next.department_id = '';
+        }
+        // Jika CORSEC dipilih, default ke departemen CORSEC (ID 10)
+        if (selectedRole?.name === 'CORSEC') {
+          const corsecDept = departments.find(d => d.code === 'CORSEC' || d.name === 'CORSEC');
+          next.department_id = corsecDept?.id || '';
+        }
+      }
+      return next;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -119,19 +134,6 @@ export default function UserFormPage() {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Departemen</label>
-            <select
-              name="department_id"
-              value={formData.department_id}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Pilih Departemen</option>
-              {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
-          </div>
-          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
             <select
               name="role_id"
@@ -144,6 +146,42 @@ export default function UserFormPage() {
               {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
           </div>
+          {(() => {
+            const selectedRole = roles.find(r => String(r.id) === String(formData.role_id));
+            const isSuperadmin = selectedRole?.name === 'SUPERADMIN';
+            const isCorsec = selectedRole?.name === 'CORSEC';
+            return (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Departemen</label>
+                {isSuperadmin ? (
+                  <input
+                    type="text"
+                    value="-"
+                    disabled
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md bg-slate-50 text-slate-500"
+                  />
+                ) : isCorsec ? (
+                  <input
+                    type="text"
+                    value={departments.find(d => d.code === 'CORSEC' || d.name === 'CORSEC')?.name || 'CORSEC'}
+                    disabled
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md bg-slate-50 text-slate-500"
+                  />
+                ) : (
+                  <select
+                    name="department_id"
+                    value={formData.department_id}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Pilih Departemen</option>
+                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         <div className="pt-4 flex justify-end space-x-3">

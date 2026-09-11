@@ -19,17 +19,19 @@ export default function Sidebar() {
     <aside className="w-64 bg-slate-900 text-white min-h-screen flex flex-col">
       <div className="p-4 border-b border-slate-700">
         <h2 className="text-lg font-bold">Media Kolektif</h2>
-        <p className="text-xs text-slate-400 mt-1">{user?.role?.name} - {user?.department?.name}</p>
+        <p className="text-xs text-slate-400 mt-1">{user?.role?.name} - {user?.role?.name === 'SUPERADMIN' ? '-' : user?.department?.name}</p>
       </div>
       <nav className="flex-1 p-4 space-y-1">
         <a href="/dashboard" className={linkClass(false)}>Dashboard</a>
         <a href="/media" className={linkClass(false)}>{hasRole('USER') ? 'Media Saya' : 'Semua Media'}</a>
-        <a href="/media/upload" className={linkClass(false)}>Upload Media</a>
+        {!hasRole('SUPERADMIN') && (
+          <a href="/media/upload" className={linkClass(false)}>Upload Media</a>
+        )}
         {hasRole('SUPERADMIN') && (
           <>
             <a href="/trash" className={linkClass(false)}>Recycle Bin</a>
             <a href="/users" className={linkClass(false)}>User Management</a>
-            <a href="/activity-logs" className={linkClass(false)}>Activity Log</a>
+
           </>
         )}
         <a href="/profile" className={linkClass(false)}>Profile</a>

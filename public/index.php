@@ -1,5 +1,10 @@
 <?php
 
+@header('Access-Control-Allow-Origin: *');
+@ini_set('upload_max_filesize', '128M');
+@ini_set('post_max_size', '130M');
+@ini_set('memory_limit', '256M');
+
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 

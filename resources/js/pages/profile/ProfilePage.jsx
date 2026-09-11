@@ -33,7 +33,7 @@ export default function ProfilePage() {
               {hasRole('SUPERADMIN') ? (
                 <p className="text-slate-800 font-medium">—</p>
               ) : (
-                <p className="text-slate-800 font-medium">{user?.department?.name || '-'}</p>
+                <p className="text-slate-800 font-medium">{user?.role?.name === 'SUPERADMIN' ? '-' : user?.department?.name || '-'}</p>
               )}
             </div>
             <div>
@@ -41,7 +41,7 @@ export default function ProfilePage() {
               {hasRole('SUPERADMIN') ? (
                 <p className="text-slate-800 font medium">—</p>
               ) : (
-                <p className="text-slate-800 font-medium">{user?.department?.code || '-'}</p>
+                <p className="text-slate-800 font-medium">{user?.role?.name === 'SUPERADMIN' ? '-' : user?.department?.code || '-'}</p>
               )}
             </div>
             <div>

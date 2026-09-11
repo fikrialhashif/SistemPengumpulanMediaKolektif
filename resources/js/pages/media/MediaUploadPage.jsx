@@ -36,19 +36,21 @@ export default function MediaUploadPage() {
   };
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    setFile(e.target.files);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) return toast.error('Silakan pilih file');
+    if (!file || file.length === 0) return toast.error('Silakan pilih file');
     
     setLoading(true);
     const data = new FormData();
     Object.keys(formData).forEach(key => {
       if (formData[key]) data.append(key, formData[key]);
     });
-    data.append('file', file);
+    for (let i = 0; i < file.length; i++) {
+      data.append('files[]', file[i]);
+    }
 
     try {
       await mediaService.store(data);
@@ -138,10 +140,11 @@ export default function MediaUploadPage() {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">File Media (Foto/Video/Doc)</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">File Media (Foto/Video/Doc) - Bisa pilih banyak file</label>
           <input
             type="file"
             onChange={handleFileChange}
+            multiple
             required
             className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />

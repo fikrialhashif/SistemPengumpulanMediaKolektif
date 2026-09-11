@@ -17,6 +17,9 @@ export default function TrashPage() {
     setLoading(true);
     mediaService.trash().then((res) => {
       setMedias(res.data.data);
+    }).catch(() => {
+      toast.error('Gagal memuat data recycle bin');
+    }).finally(() => {
       setLoading(false);
     });
   };

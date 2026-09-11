@@ -25,7 +25,9 @@ class MediaUpdateRequest extends FormRequest
             'category_id' => ['sometimes', 'required', 'exists:master_media_categories,id'],
             'event_date' => ['sometimes', 'required', 'date'],
             'department_id' => ['sometimes', 'required', 'exists:master_departments,id'],
-            'file' => ['sometimes', 'file', 'mimes:jpg,jpeg,png,webp,mp4,mov,avi,mkv,webm,pdf,doc,docx,ppt,pptx'],
+            'file' => ['sometimes', 'file', 'max:102400', 'mimes:jpg,jpeg,png,webp,mp4,mov,avi,mkv,webm,pdf,doc,docx,ppt,pptx'],
+            'files' => ['sometimes', 'array'],
+            'files.*' => ['file', 'max:102400', 'mimes:jpg,jpeg,png,webp,mp4,mov,avi,mkv,webm,pdf,doc,docx,ppt,pptx'],
         ];
     }
 }
