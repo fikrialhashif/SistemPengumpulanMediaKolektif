@@ -13,6 +13,8 @@ import UserListPage from './pages/users/UserListPage';
 import UserFormPage from './pages/users/UserFormPage';
 import ActivityLogPage from './pages/activity/ActivityLogPage';
 import ProfilePage from './pages/profile/ProfilePage';
+import DepartmentMasterPage from './pages/master/DepartmentMasterPage';
+import MediaCategoryMasterPage from './pages/master/MediaCategoryMasterPage';
 import LoadingSpinner from './components/LoadingSpinner';
 
 const ProtectedRoute = ({ children }) => {
@@ -82,6 +84,25 @@ export default function AppRoutes() {
             </RoleBasedRoute>
           }
         />
+
+        {/* Master Data Pages (Superadmin & Corsec Only) */}
+        <Route
+          path="master/departments"
+          element={
+            <RoleBasedRoute roles={['SUPERADMIN', 'CORSEC']}>
+              <DepartmentMasterPage />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="master/media-categories"
+          element={
+            <RoleBasedRoute roles={['SUPERADMIN', 'CORSEC']}>
+              <MediaCategoryMasterPage />
+            </RoleBasedRoute>
+          }
+        />
+
         <Route path="profile" element={<ProfilePage />} />
       </Route>
 

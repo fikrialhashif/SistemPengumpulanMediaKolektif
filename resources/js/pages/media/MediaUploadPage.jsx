@@ -26,9 +26,9 @@ export default function MediaUploadPage() {
   const [files, setFiles] = useState([]);
 
   useEffect(() => {
-    masterService.categories().then(res => setCategories(res.data.data));
+    masterService.categories().then(res => setCategories(res.data.data.filter(c => c.status === 'ACTIVE')));
     if (hasRole(['SUPERADMIN', 'CORSEC'])) {
-      masterService.departments().then(res => setDepartments(res.data.data));
+      masterService.departments().then(res => setDepartments(res.data.data.filter(d => d.status === 'ACTIVE')));
     }
   }, []);
 

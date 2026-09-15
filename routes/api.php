@@ -24,8 +24,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Master data
     Route::get('/departments', [MasterController::class, 'departments']);
+    Route::post('/departments', [MasterController::class, 'storeDepartment']);
+    Route::put('/departments/{id}', [MasterController::class, 'updateDepartment']);
+    Route::delete('/departments/{id}', [MasterController::class, 'destroyDepartment']);
+
     Route::get('/roles', [MasterController::class, 'roles']);
+
     Route::get('/categories', [MasterController::class, 'categories']);
+    Route::post('/categories', [MasterController::class, 'storeCategory']);
+    Route::put('/categories/{id}', [MasterController::class, 'updateCategory']);
+    Route::delete('/categories/{id}', [MasterController::class, 'destroyCategory']);
 
     // Media
     Route::get('/media', [MediaController::class, 'index']);

@@ -33,8 +33,8 @@ export default function MediaEditPage() {
         department_id: m.department?.id || '',
         event_date: m.event_date ? m.event_date.split('T')[0] : ''
       });
-      setCategories(cRes.data.data);
-      setDepartments(dRes.data.data);
+      setCategories(cRes.data.data.filter(c => c.status === 'ACTIVE' || c.id === m.category?.id));
+      setDepartments(dRes.data.data.filter(d => d.status === 'ACTIVE' || d.id === m.department?.id));
       setFetching(false);
     }).catch(() => {
       toast.error('Gagal mengambil data media');

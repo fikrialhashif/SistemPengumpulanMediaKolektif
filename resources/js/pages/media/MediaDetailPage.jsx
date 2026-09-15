@@ -297,8 +297,8 @@ export default function MediaDetailPage() {
             </h3>
             
             <div className="space-y-5">
-              <DetailRow icon="🏢" label="Departemen" value={media.department?.name} highlight />
-              <DetailRow icon="🗂️" label="Kategori" value={media.category?.name} highlight />
+              <DetailRow icon="🏢" label="Departemen" value={media.department?.name || '-'} highlight />
+              <DetailRow icon="🗂️" label="Kategori" value={media.category?.name || '-'} highlight />
               <DetailRow icon="📅" label="Tanggal Kegiatan" value={formatDate(media.event_date)} />
               <DetailRow icon="👤" label="Diunggah Oleh" value={media.uploader?.name} />
               <DetailRow icon="🕒" label="Waktu Unggah" value={formatDateTime(media.created_at)} />

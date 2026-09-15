@@ -165,7 +165,7 @@ export default function MediaListPage() {
                 
                 {/* Category Badge */}
                 <div className="absolute top-3 right-3 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full text-[10px] font-bold text-emerald-700 border border-emerald-100 shadow-sm pointer-events-none">
-                  {media.category?.name || 'Umum'}
+                  {media.category?.name || '-'}
                 </div>
               </div>
 
@@ -184,9 +184,9 @@ export default function MediaListPage() {
                   </div>
                   
                   <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
-                    <div className="flex items-center bg-slate-50 px-2 py-1 rounded text-xs font-semibold text-slate-600 truncate max-w-[60%]" title={media.department?.name}>
+                    <div className="flex items-center bg-slate-50 px-2 py-1 rounded text-xs font-semibold text-slate-600 truncate max-w-[60%]" title={media.department?.name || '-'}>
                       <span className="w-2 h-2 rounded-full bg-yellow-400 mr-1.5"></span>
-                      {media.department?.code}
+                      {media.department?.code || '-'}
                     </div>
                     <span className="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded">
                       {formatFileSize(media.file_size)}

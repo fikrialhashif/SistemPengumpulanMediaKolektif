@@ -84,7 +84,7 @@ export default function TrashPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                    {media.department?.name}
+                    {media.department?.name || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                     {formatDate(media.deleted_at)}

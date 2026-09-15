@@ -113,7 +113,7 @@ export default function DashboardPage() {
                 )}
                 <div className="p-4 bg-white relative">
                   <div className="absolute -top-3 right-3 bg-white px-2 py-0.5 rounded-full text-[10px] font-bold text-emerald-600 border border-emerald-100 shadow-sm">
-                    {m.category?.name || 'Uncategorized'}
+                    {m.category?.name || '-'}
                   </div>
                   <h3 className="font-bold text-slate-800 line-clamp-1 mb-1 group-hover:text-emerald-600 transition-colors" title={m.title}>{m.title}</h3>
                   <p className="text-xs text-slate-500">{formatDateTime(m.created_at).split(' ')[0]}</p>
@@ -149,7 +149,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <p className="font-semibold text-sm text-slate-800 group-hover:text-emerald-700 transition-colors">{m.title}</p>
-                      <p className="text-xs text-emerald-600/80 font-medium">{m.department?.name}</p>
+                      <p className="text-xs text-emerald-600/80 font-medium">{m.department?.name || '-'}</p>
                     </div>
                   </div>
                   <span className="text-xs text-slate-400 bg-white px-2 py-1 border border-slate-100 rounded-md">

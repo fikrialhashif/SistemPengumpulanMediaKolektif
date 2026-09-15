@@ -31,8 +31,16 @@ export const userService = {
 
 export const masterService = {
   departments: () => api.get('/departments'),
+  storeDepartment: (data) => api.post('/departments', data),
+  updateDepartment: (id, data) => api.put(`/departments/${id}`, data),
+  deleteDepartment: (id) => api.delete(`/departments/${id}`),
+
   roles: () => api.get('/roles'),
+
   categories: () => api.get('/categories'),
+  storeCategory: (data) => api.post('/categories', data),
+  updateCategory: (id, data) => api.put(`/categories/${id}`, data),
+  deleteCategory: (id) => api.delete(`/categories/${id}`),
 };
 
 export const dashboardService = {

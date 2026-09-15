@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logo1 from '../../../assets/logo1.png';
@@ -6,6 +7,9 @@ export default function Sidebar() {
   const { user, hasRole, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isMasterOpen, setIsMasterOpen] = useState(
+    ['/master/departments', '/master/media-categories'].includes(location.pathname)
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -66,6 +70,51 @@ export default function Sidebar() {
         <div className="pt-6 mt-4 border-t border-emerald-800/50">
           <p className="px-4 text-xs font-bold text-emerald-500 uppercase tracking-wider mb-2">Pengaturan</p>
           
+          {hasRole(['SUPERADMIN', 'CORSEC']) && (
+            <>
+              <div className="mb-1">
+                <button
+                  onClick={() => setIsMasterOpen(!isMasterOpen)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isMasterOpen || ['/master/departments', '/master/media-categories'].includes(location.pathname)
+                      ? 'bg-emerald-700/60 text-white'
+                      : 'text-emerald-100 hover:bg-emerald-700/50 hover:text-white'
+                  }`}
+                >
+                  <span className="flex items-center">
+                    <svg className="w-5 h-5 mr-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
+                    Master Data
+                  </span>
+                  <svg className={`w-4 h-4 transition-transform duration-200 ${isMasterOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                {isMasterOpen && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    <a
+                      href="/master/departments"
+                      className={`block px-4 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+                        isActive('/master/departments')
+                          ? 'bg-emerald-600 text-white shadow-md'
+                          : 'text-emerald-100 hover:bg-emerald-700/50 hover:text-white'
+                      }`}
+                    >
+                      Master Departemen
+                    </a>
+                    <a
+                      href="/master/media-categories"
+                      className={`block px-4 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+                        isActive('/master/media-categories')
+                          ? 'bg-emerald-600 text-white shadow-md'
+                          : 'text-emerald-100 hover:bg-emerald-700/50 hover:text-white'
+                      }`}
+                    >
+                      Master Media Category
+                    </a>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
           {hasRole('SUPERADMIN') && (
             <>
               <a href="/trash" className={linkClass(isActive('/trash'))}>

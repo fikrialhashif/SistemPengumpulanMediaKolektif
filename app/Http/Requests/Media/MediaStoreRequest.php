@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Media;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class MediaStoreRequest extends FormRequest
 {
@@ -22,9 +23,9 @@ class MediaStoreRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'category_id' => ['required', 'exists:master_media_categories,id'],
+            'category_id' => ['required', Rule::exists('master_media_categories', 'id')->where('status', 'ACTIVE')],
             'event_date' => ['required', 'date'],
-            'department_id' => ['nullable', 'exists:master_departments,id'],
+            'department_id' => ['nullable', Rule::exists('master_departments', 'id')->where('status', 'ACTIVE')],
             'files' => ['required', 'array', 'min:1'],
             'files.*' => ['file', 'max:102400', 'mimes:jpg,jpeg,png,webp,mp4,mov,avi,mkv,webm,pdf,doc,docx,ppt,pptx'],
         ];
