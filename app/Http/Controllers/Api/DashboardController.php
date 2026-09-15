@@ -42,6 +42,13 @@ class DashboardController extends Controller
                 ->latest()
                 ->take(5)
                 ->get();
+
+            $data['my_media'] = Media::where('uploaded_by', $user->id)
+                ->where('department_id', $departmentId)
+                ->with(['category', 'uploader'])
+                ->latest('created_at')
+                ->take(3)
+                ->get();
         } elseif ($role === 'CORSEC') {
             // CORSEC dashboard - all departments
             $data['total_media'] = Media::count();
