@@ -145,6 +145,9 @@ export default function MediaListPage() {
                   <img 
                     src={`/storage/${media.file_path}`} 
                     alt={media.title} 
+                    onError={e => {
+                      e.target.src = '/assets/fallback-image.svg';
+                    }}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                   />
                 ) : media.file_type.startsWith('video/') ? (
@@ -207,7 +210,7 @@ function VideoThumbnail({ filePath, fileType }) {
 
   return (
     <div
-      className="relative w-full h-full"
+      className="relative w-full h-full overflow-hidden"
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
     >
@@ -218,6 +221,7 @@ function VideoThumbnail({ filePath, fileType }) {
           muted
           loop
           playsInline
+          onError={e => { e.target.onerror = null; e.target.src = '/assets/fallback-video.svg'; }}
         >
           <source src={filePath} type={fileType} />
         </video>

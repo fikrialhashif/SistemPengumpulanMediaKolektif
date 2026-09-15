@@ -105,10 +105,10 @@ export default function MediaDetailPage() {
 
   const renderPreview = (file, className = '') => {
     if (file.file_type.startsWith('image/')) {
-      return <img src={`/storage/${file.file_path}`} alt={file.file_name} className={`w-full max-h-[500px] object-contain rounded-xl shadow-inner bg-slate-900 ${className}`} />;
+      return <img src={`/storage/${file.file_path}`} alt={file.file_name} onError={e => { e.target.src = '/assets/fallback-image.svg'; }} className={`w-full max-h-[500px] object-contain rounded-xl shadow-inner bg-slate-900 ${className}`} />;
     }
     if (file.file_type.startsWith('video/')) {
-      return <video src={`/storage/${file.file_path}`} controls className={`w-full max-h-[500px] rounded-xl shadow-inner bg-slate-900 ${className}`} />;
+      return <video src={`/storage/${file.file_path}`} controls onError={e => { e.target.src = '/assets/fallback-video.svg'; }} className={`w-full max-h-[500px] rounded-xl shadow-inner bg-slate-900 ${className}`} />;
     }
     return (
       <div className={`aspect-video bg-gradient-to-br from-emerald-50 to-teal-50 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-emerald-200 ${className}`}>
@@ -125,7 +125,7 @@ export default function MediaDetailPage() {
 
   const renderThumbnail = (file) => {
     if (file.file_type.startsWith('image/')) {
-      return <img src={`/storage/${file.file_path}`} alt={file.file_name} className="w-full h-full object-cover" />;
+      return <img src={`/storage/${file.file_path}`} alt={file.file_name} onError={e => { e.target.src = '/assets/fallback-image.svg'; }} className="w-full h-full object-cover" />;
     }
     if (file.file_type.startsWith('video/')) {
       return (

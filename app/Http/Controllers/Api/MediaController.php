@@ -237,10 +237,12 @@ class MediaController extends Controller
             $file = $files->first();
 
             if (!$disk->exists($file->file_path)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'File tidak ditemukan.'
-                ], 404);
+                $fallbackPath = storage_path('app/public/assets/fallback-image.svg');
+                $headers = [
+                    'Content-Type' => 'image/svg+xml',
+                    'Content-Disposition' => 'inline; filename="fallback-image.svg"',
+                ];
+                return response()->file($fallbackPath, $headers);
             }
 
             ActivityLogService::log('DOWNLOAD_MEDIA', $media->id, "Download media: {$media->title} oleh {$user->name}");
@@ -304,10 +306,12 @@ class MediaController extends Controller
         $disk = Storage::disk(config('filesystems.default', 'public'));
 
         if (!$disk->exists($file->file_path)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'File tidak ditemukan di storage.'
-            ], 404);
+            $fallbackPath = storage_path('app/public/assets/fallback-image.svg');
+            $headers = [
+                'Content-Type' => 'image/svg+xml',
+                'Content-Disposition' => 'inline; filename="fallback-image.svg"',
+            ];
+            return response()->file($fallbackPath, $headers);
         }
 
         ActivityLogService::log('DOWNLOAD_MEDIA', $media->id, "Download file: {$file->file_name} dari media: {$media->title} oleh {$user->name}");
