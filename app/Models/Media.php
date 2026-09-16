@@ -19,8 +19,21 @@ class Media extends Model
         'file_name',
         'file_path',
         'file_type',
-        'file_size'
+        'file_size',
+        'approval_status',
+        'review_notes',
+        'approved_by',
+        'approved_at',
     ];
+
+    protected $casts = [
+        'approved_at' => 'datetime',
+    ];
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
 
     public function department()
     {

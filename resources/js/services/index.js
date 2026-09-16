@@ -14,6 +14,8 @@ export const mediaService = {
   delete: (id) => api.delete(`/media/${id}`),
   download: (id) => api.get(`/media/${id}/download`, { responseType: 'blob' }),
   downloadFile: (id, fileId) => api.get(`/media/${id}/files/${fileId}/download`, { responseType: 'blob' }),
+  approve: (id, data = {}) => api.post(`/media/${id}/approve`, data),
+  unapprove: (id, data) => api.post(`/media/${id}/unapprove`, data),
   trash: (params = {}) => api.get('/media/trash', { params }),
   restore: (id) => api.post(`/media/${id}/restore`),
   forceDelete: (id) => api.delete(`/media/${id}/force`),

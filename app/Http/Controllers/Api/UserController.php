@@ -84,7 +84,24 @@ class UserController extends Controller
             ], 403);
         }
 
-        $user = $this->userService->create($request->validated());
+        $validated = $request->validated();
+
+        // Validasi: hanya boleh 1 akun manager per departemen
+        $role = \App\Models\Role::find($validated['role_id']);
+        if ($role && $role->name === 'MANAGER' && !empty($validated['department_id'])) {
+            $existingManager = User::where('department_id', $validated['department_id'])
+                ->where('role_id', $role->id)
+                ->first();
+
+            if ($existingManager) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Departemen ini sudah memiliki seorang Manager (' . $existingManager->name . '). Maksimal 1 akun Manager per departemen.'
+                ], 422);
+            }
+        }
+
+        $user = $this->userService->create($validated);
 
         ActivityLogService::log('CREATE_USER', null, "Membuat user: {$user->name}");
 
@@ -104,7 +121,28 @@ class UserController extends Controller
             ], 403);
         }
 
-        $user = $this->userService->update($request->validated(), User::findOrFail($id));
+        $validated = $request->validated();
+        $targetUser = User::findOrFail($id);
+
+        $roleId = $validated['role_id'] ?? $targetUser->role_id;
+        $deptId = array_key_exists('department_id', $validated) ? $validated['department_id'] : $targetUser->department_id;
+
+        $role = \App\Models\Role::find($roleId);
+        if ($role && $role->name === 'MANAGER' && !empty($deptId)) {
+            $existingManager = User::where('department_id', $deptId)
+                ->where('role_id', $role->id)
+                ->where('id', '!=', $id)
+                ->first();
+
+            if ($existingManager) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Departemen ini sudah memiliki seorang Manager (' . $existingManager->name . '). Maksimal 1 akun Manager per departemen.'
+                ], 422);
+            }
+        }
+
+        $user = $this->userService->update($validated, $targetUser);
 
         ActivityLogService::log('UPDATE_USER', null, "Update user: {$user->name}");
 

@@ -19,6 +19,12 @@ export default function MediaDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Approval state
+  const [approving, setApproving] = useState(false);
+  const [unapproving, setUnapproving] = useState(false);
+  const [unapproveModalOpen, setUnapproveModalOpen] = useState(false);
+  const [reviewNotes, setReviewNotes] = useState('');
+
   useEffect(() => {
     mediaService.get(id)
       .then((res) => {
@@ -95,6 +101,38 @@ export default function MediaDetailPage() {
     }
   };
 
+  const handleApprove = async () => {
+    setApproving(true);
+    try {
+      const res = await mediaService.approve(id);
+      setMedia(res.data.data);
+      toast.success('Media berhasil disetujui (Approved)! Media kini dapat dilihat oleh CORSEC.');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Gagal menyetujui media');
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleUnapproveSubmit = async (e) => {
+    e.preventDefault();
+    if (!reviewNotes.trim()) {
+      return toast.error('Catatan review wajib diisi sebelum konfirmasi unapprove.');
+    }
+    setUnapproving(true);
+    try {
+      const res = await mediaService.unapprove(id, { review_notes: reviewNotes.trim() });
+      setMedia(res.data.data);
+      toast.warning('Media ditolak (Unapproved) dengan catatan review.');
+      setUnapproveModalOpen(false);
+      setReviewNotes('');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Gagal unapprove media');
+    } finally {
+      setUnapproving(false);
+    }
+  };
+
   if (loading) return <div className="flex justify-center py-20"><LoadingSpinner /></div>;
 
   const files = media.files && media.files.length > 0
@@ -141,9 +179,80 @@ export default function MediaDetailPage() {
     );
   };
 
+  const isApprover = hasRole('SUPERADMIN') || (hasRole('MANAGER') && media.department_id === user.department_id);
+
   return (
     <>
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
+      {/* Approval Status Banner */}
+      <div className={`p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
+        media.approval_status === 'APPROVED' 
+          ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
+          : media.approval_status === 'UNAPPROVED'
+          ? 'bg-rose-50/80 border-rose-200 text-rose-900'
+          : 'bg-amber-50/80 border-amber-200 text-amber-900'
+      }`}>
+        <div className="flex items-start space-x-3.5">
+          <span className="text-3xl">
+            {media.approval_status === 'APPROVED' ? '✅' : media.approval_status === 'UNAPPROVED' ? '❌' : '⏳'}
+          </span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="font-bold text-base">
+                Status Approval:{' '}
+                {media.approval_status === 'APPROVED' 
+                  ? 'Disetujui (Approved)' 
+                  : media.approval_status === 'UNAPPROVED' 
+                  ? 'Ditolak / Butuh Revisi (Unapproved)' 
+                  : 'Menunggu Review Manager'}
+              </h4>
+            </div>
+            <p className="text-xs mt-1 opacity-80">
+              {media.approval_status === 'APPROVED'
+                ? 'Media ini telah lolos kurasi oleh Manager Department dan dapat dilihat serta diunduh oleh CORSEC.'
+                : media.approval_status === 'UNAPPROVED'
+                ? 'Media ini tidak lolos approval. Periksa catatan review dari manager di bawah ini.'
+                : 'Media sedang menunggu kurasi/peninjauan dari Manager Department sebelum dapat diakses CORSEC.'}
+            </p>
+            {media.review_notes && (
+              <div className="mt-3 p-3 rounded-xl bg-white/80 border border-current/20 text-xs">
+                <span className="font-bold block mb-1">📝 Catatan Review Manager:</span>
+                <p className="whitespace-pre-wrap">{media.review_notes}</p>
+                {media.approver && (
+                  <span className="block mt-1 text-[11px] opacity-75">
+                    Oleh: {media.approver.name} {media.approved_at ? `(${formatDateTime(media.approved_at)})` : ''}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Action Buttons for Approver (Manager of Dept or Superadmin) */}
+        {isApprover && (
+          <div className="flex items-center gap-2 self-end md:self-center flex-shrink-0">
+            {media.approval_status !== 'APPROVED' && (
+              <button
+                onClick={handleApprove}
+                disabled={approving}
+                className="flex items-center bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
+              >
+                {approving ? 'Memproses...' : '✓ Setujui Media'}
+              </button>
+            )}
+            {media.approval_status !== 'UNAPPROVED' && (
+              <button
+                onClick={() => setUnapproveModalOpen(true)}
+                disabled={unapproving}
+                className="flex items-center bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
+              >
+                ✕ Tolak (Unapprove)
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Header Info & Actions */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-emerald-50">
         <button 
@@ -297,6 +406,12 @@ export default function MediaDetailPage() {
             </h3>
             
             <div className="space-y-5">
+              <DetailRow 
+                icon={media.approval_status === 'APPROVED' ? '✅' : media.approval_status === 'UNAPPROVED' ? '❌' : '⏳'} 
+                label="Status Approval" 
+                value={media.approval_status === 'APPROVED' ? 'APPROVED' : media.approval_status === 'UNAPPROVED' ? 'UNAPPROVED' : 'PENDING'} 
+                highlight 
+              />
               <DetailRow icon="🏢" label="Departemen" value={media.department?.name || '-'} highlight />
               <DetailRow icon="🗂️" label="Kategori" value={media.category?.name || '-'} highlight />
               <DetailRow icon="📅" label="Tanggal Kegiatan" value={formatDate(media.event_date)} />
@@ -361,6 +476,56 @@ export default function MediaDetailPage() {
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
       />
+
+      {/* Modal Unapprove dengan Catatan Review Wajib */}
+      {unapproveModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-rose-100 animate-[slideUp_0.25s_ease-out]">
+            <form onSubmit={handleUnapproveSubmit} className="p-7">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-3xl mb-4">
+                ⚠️
+              </div>
+              <h3 className="text-xl font-extrabold text-slate-800 text-center mb-1">Tolak Media (Unapprove)</h3>
+              <p className="text-slate-500 text-center text-xs mb-5">
+                Berikan catatan review mengenai alasan media ini tidak disetujui agar uploader dapat merevisinya.
+              </p>
+
+              <div className="mb-6">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Catatan Review / Alasan Penolakan <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  value={reviewNotes}
+                  onChange={(e) => setReviewNotes(e.target.value)}
+                  rows={4}
+                  required
+                  placeholder="Contoh: Kualitas gambar kurang jelas, atau tidak sesuai dengan standar dokumentasi kegiatan..."
+                  className="w-full px-4 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 focus:bg-white outline-none transition"
+                ></textarea>
+                <span className="text-[11px] text-slate-400 mt-1 block">Wajib diisi minimal 3 karakter.</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setUnapproveModalOpen(false); setReviewNotes(''); }}
+                  disabled={unapproving}
+                  className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={unapproving || !reviewNotes.trim()}
+                  className="px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 transition disabled:opacity-50 shadow-md shadow-rose-200"
+                >
+                  {unapproving ? 'Memproses...' : 'Konfirmasi Unapprove'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
     </>
   );

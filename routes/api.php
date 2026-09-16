@@ -39,6 +39,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/media', [MediaController::class, 'index']);
     Route::post('/media', [MediaController::class, 'store']);
 
+    // Approval routes
+    Route::post('/media/{id}/approve', [MediaController::class, 'approve']);
+    Route::post('/media/{id}/unapprove', [MediaController::class, 'unapprove']);
+
     // Recycle bin (harus sebelum /media/{id} agar tidak bentrok)
     Route::get('/media/trash', [MediaController::class, 'trash']);
     Route::post('/media/{id}/restore', [MediaController::class, 'restore']);

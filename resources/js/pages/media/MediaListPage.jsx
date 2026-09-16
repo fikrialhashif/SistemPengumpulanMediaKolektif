@@ -10,8 +10,8 @@ export default function MediaListPage() {
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filters, setFilters] = useState({ department_id: '', category_id: '', search: '' });
-  const { hasRole } = useAuth();
+  const [filters, setFilters] = useState({ department_id: '', category_id: '', search: '', approval_status: '' });
+  const { user, hasRole } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -118,6 +118,26 @@ export default function MediaListPage() {
             <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
           </div>
         </div>
+
+        {/* Filter Approval Status untuk USER, MANAGER, SUPERADMIN (CORSEC selalu approved) */}
+        {!hasRole('CORSEC') && (
+          <div className="w-full sm:w-auto relative min-w-[190px]">
+            <select
+              name="approval_status"
+              value={filters.approval_status}
+              onChange={handleFilterChange}
+              className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-4 pr-8 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all cursor-pointer"
+            >
+              <option value="">⚡ Semua Status Approval</option>
+              <option value="APPROVED">✅ Approved</option>
+              <option value="UNAPPROVED">❌ Unapproved</option>
+              <option value="PENDING">⏳ Menunggu Review</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content Area */}
@@ -169,6 +189,25 @@ export default function MediaListPage() {
                 {/* Category Badge */}
                 <div className="absolute top-3 right-3 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full text-[10px] font-bold text-emerald-700 border border-emerald-100 shadow-sm pointer-events-none">
                   {media.category?.name || '-'}
+                </div>
+
+                {/* Approval Status Badge */}
+                <div className="absolute top-3 left-3 pointer-events-none">
+                  {media.approval_status === 'APPROVED' && (
+                    <span className="bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm backdrop-blur flex items-center gap-1">
+                      <span>✓</span> Approved
+                    </span>
+                  )}
+                  {media.approval_status === 'UNAPPROVED' && (
+                    <span className="bg-rose-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm backdrop-blur flex items-center gap-1">
+                      <span>✕</span> Unapproved
+                    </span>
+                  )}
+                  {(!media.approval_status || media.approval_status === 'PENDING') && (
+                    <span className="bg-amber-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm backdrop-blur flex items-center gap-1">
+                      <span>⏳</span> Pending
+                    </span>
+                  )}
                 </div>
               </div>
 

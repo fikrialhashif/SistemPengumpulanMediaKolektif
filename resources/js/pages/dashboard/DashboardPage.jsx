@@ -24,7 +24,7 @@ export default function DashboardPage() {
     <div className="space-y-8 pb-8">
       {/* Cards Top Row */}
       {hasRole('USER') && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <DashboardCard 
             title="Total Media Saya" 
             value={data.total_media} 
@@ -32,18 +32,55 @@ export default function DashboardPage() {
             color="emerald"
           />
           <DashboardCard 
-            title="Kategori Tersedia" 
-            value={data.media_by_category?.length || 0} 
-            icon="🗂️"
-            color="yellow"
-          />
-          <DashboardCard 
-            title="Media Terbaru" 
-            value={data.recent_media?.length || 0} 
-            icon="✨"
+            title="Disetujui (Approved)" 
+            value={data.total_approved || 0} 
+            icon="✅"
             color="teal"
           />
+          <DashboardCard 
+            title="Ditolak (Unapproved)" 
+            value={data.total_unapproved || 0} 
+            icon="❌"
+            color="red"
+          />
+          <DashboardCard 
+            title="Menunggu Review" 
+            value={data.total_pending || 0} 
+            icon="⏳"
+            color="yellow"
+          />
         </div>
+      )}
+
+      {hasRole('MANAGER') && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <DashboardCard 
+              title="Media Departemen" 
+              value={data.total_media} 
+              icon="🏢"
+              color="emerald"
+            />
+            <DashboardCard 
+              title="Menunggu Review" 
+              value={data.total_pending || 0} 
+              icon="⏳"
+              color="yellow"
+            />
+            <DashboardCard 
+              title="Telah Disetujui" 
+              value={data.total_approved || 0} 
+              icon="✅"
+              color="teal"
+            />
+            <DashboardCard 
+              title="Ditolak / Revisi" 
+              value={data.total_unapproved || 0} 
+              icon="❌"
+              color="red"
+            />
+          </div>
+        </>
       )}
 
       {hasRole('CORSEC') && (
@@ -76,6 +113,55 @@ export default function DashboardPage() {
       )}
 
       {/* Content Area */}
+      {hasRole('MANAGER') && (
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold text-slate-800">Media Departemen Anda (Perlu Review)</h3>
+            <button 
+              onClick={() => navigate('/media')}
+              className="text-sm font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Buka Pustaka Media
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {data.recent_media?.map((m) => (
+              <div
+                key={m.id}
+                className="bg-white rounded-xl shadow-sm border border-emerald-100/50 hover:shadow-md hover:-translate-y-1 hover:border-emerald-300 transition-all duration-300 cursor-pointer overflow-hidden group"
+                onClick={() => navigate(`/media/${m.id}`)}
+              >
+                <div className="relative h-40 overflow-hidden bg-slate-100">
+                  {m.file_type.startsWith('image/') ? (
+                    <img
+                      src={`/storage/${m.file_path}`}
+                      alt={m.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="bg-emerald-50/50 h-full flex items-center justify-center">
+                      <span className="text-4xl">{m.file_type.startsWith('video/') ? '🎬' : '📄'}</span>
+                    </div>
+                  )}
+                  <div className="absolute top-2 left-2">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded shadow-sm text-white ${
+                      m.approval_status === 'APPROVED' ? 'bg-emerald-600' : m.approval_status === 'UNAPPROVED' ? 'bg-rose-600' : 'bg-amber-600'
+                    }`}>
+                      {m.approval_status || 'PENDING'}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4 bg-white">
+                  <h3 className="font-bold text-slate-800 line-clamp-1 mb-1 text-sm group-hover:text-emerald-600" title={m.title}>{m.title}</h3>
+                  <p className="text-xs text-slate-500">Oleh: {m.uploader?.name || '-'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {hasRole('USER') && (
         <div className="mt-8">
           <div className="flex items-center justify-between mb-6">

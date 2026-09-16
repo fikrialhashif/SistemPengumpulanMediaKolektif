@@ -35,6 +35,7 @@ class DatabaseSeeder extends Seeder
 
         $roles = [
             ['name' => 'USER', 'description' => 'Department User'],
+            ['name' => 'MANAGER', 'description' => 'Department Manager - approves media'],
             ['name' => 'CORSEC', 'description' => 'Corporate Secretary'],
             ['name' => 'SUPERADMIN', 'description' => 'Super Administrator'],
         ];
@@ -69,6 +70,37 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('password123'),
                 'department_id' => Department::where('code', 'CORSEC')->value('id'),
                 'role_id' => Role::where('name', 'CORSEC')->value('id'),
+                'status' => 'ACTIVE',
+            ]
+        );
+
+        // Manager untuk setiap departemen (hanya 1 akun per departemen)
+        $managerRole = Role::where('name', 'MANAGER')->first();
+        foreach ($departments as $dept) {
+            $deptModel = Department::where('code', $dept['code'])->first();
+            if ($deptModel) {
+                $emailSlug = strtolower(str_replace('_', '.', $dept['code']));
+                User::firstOrCreate(
+                    ['email' => "manager.{$emailSlug}@example.com"],
+                    [
+                        'name' => "Manager {$dept['name']}",
+                        'password' => Hash::make('password123'),
+                        'department_id' => $deptModel->id,
+                        'role_id' => $managerRole->id,
+                        'status' => 'ACTIVE',
+                    ]
+                );
+            }
+        }
+
+        // Akun manager umum untuk tes cepat
+        User::firstOrCreate(
+            ['email' => 'manager@example.com'],
+            [
+                'name' => 'Manager QHSE',
+                'password' => Hash::make('password123'),
+                'department_id' => Department::where('code', 'QHSE')->value('id'),
+                'role_id' => $managerRole->id,
                 'status' => 'ACTIVE',
             ]
         );

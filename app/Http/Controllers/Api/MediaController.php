@@ -26,9 +26,19 @@ class MediaController extends Controller
         if (!$user) return false;
         $role = $user->role->name;
         if ($role === 'SUPERADMIN') return true;
-        if ($role === 'CORSEC') return true;
-        // Regular user only same department
-        return $media->department_id === $user->department_id;
+
+        // CORSEC hanya boleh lihat media yang sudah APPROVED
+        if ($role === 'CORSEC') {
+            return $media->approval_status === 'APPROVED';
+        }
+
+        // MANAGER boleh lihat semua media departemennya
+        if ($role === 'MANAGER') {
+            return $media->department_id === $user->department_id;
+        }
+
+        // Regular USER hanya boleh lihat media miliknya sendiri
+        return $media->uploaded_by === $user->id;
     }
 
     protected function userCanModify(Media $media, $user): bool
@@ -36,9 +46,9 @@ class MediaController extends Controller
         if (!$user) return false;
         $role = $user->role->name;
         if ($role === 'SUPERADMIN') return true;
-        if ($role === 'CORSEC') return true;
-        // Regular user only own uploads in their department
-        return $media->uploaded_by === $user->id && $media->department_id === $user->department_id;
+        
+        // Regular user atau manager hanya pemilik yang bisa ubah metadata/file
+        return $media->uploaded_by === $user->id;
     }
 
     public function index(Request $request)
@@ -47,10 +57,31 @@ class MediaController extends Controller
         $user = $request->user();
         $role = $user->role->name;
 
-        $query = Media::with(['department', 'uploader', 'category']);
+        $query = Media::with(['department', 'uploader', 'category', 'approver']);
 
         if ($role === 'USER') {
+            // User hanya bisa melihat media miliknya sendiri
+            $query->where('uploaded_by', $user->id);
+            
+            // Filter dropdown approved / unapproved / pending jika diminta
+            if ($request->filled('approval_status')) {
+                $query->where('approval_status', $request->string('approval_status'));
+            }
+        } elseif ($role === 'MANAGER') {
+            // Manager melihat semua media yang diupload di departemennya
             $query->where('department_id', $user->department_id);
+
+            if ($request->filled('approval_status')) {
+                $query->where('approval_status', $request->string('approval_status'));
+            }
+        } elseif ($role === 'CORSEC') {
+            // CORSEC HANYA DAPAT MELIHAT media yang sudah diapprove oleh Manager
+            $query->where('approval_status', 'APPROVED');
+        } elseif ($role === 'SUPERADMIN') {
+            // Superadmin dapat melihat semua media terlepas status approval
+            if ($request->filled('approval_status')) {
+                $query->where('approval_status', $request->string('approval_status'));
+            }
         }
 
         if ($request->filled('department_id') && in_array($role, ['CORSEC', 'SUPERADMIN'])) {
@@ -123,7 +154,7 @@ class MediaController extends Controller
 
         $validated = $request->validated();
 
-        if ($role === 'USER') {
+        if (in_array($role, ['USER', 'MANAGER'])) {
             $validated['department_id'] = $user->department_id;
         } elseif ($role === 'CORSEC') {
             if (empty($validated['department_id'])) {
@@ -370,6 +401,73 @@ class MediaController extends Controller
             'success' => true,
             'data' => new MediaResource($media),
             'message' => 'Media berhasil dipulihkan'
+        ], 200);
+    }
+
+    public function approve(Request $request, $id)
+    {
+        $media = Media::findOrFail($id);
+        $user = $request->user();
+        $role = $user->role->name;
+
+        // Hanya Manager departemen bersangkutan atau Superadmin yang dapat approve
+        if ($role !== 'SUPERADMIN' && ($role !== 'MANAGER' || $media->department_id !== $user->department_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Manager dari departemen terkait yang dapat menyetujui media ini.'
+            ], 403);
+        }
+
+        $media->update([
+            'approval_status' => 'APPROVED',
+            'review_notes' => $request->input('review_notes', null),
+            'approved_by' => $user->id,
+            'approved_at' => now(),
+        ]);
+
+        ActivityLogService::log('APPROVE_MEDIA', $media->id, "Media disetujui oleh {$user->name}");
+
+        return response()->json([
+            'success' => true,
+            'data' => new MediaResource($media->fresh(['department', 'uploader', 'category', 'approver', 'files'])),
+            'message' => 'Media berhasil disetujui (Approved)'
+        ], 200);
+    }
+
+    public function unapprove(Request $request, $id)
+    {
+        $media = Media::findOrFail($id);
+        $user = $request->user();
+        $role = $user->role->name;
+
+        // Hanya Manager departemen bersangkutan atau Superadmin yang dapat unapprove
+        if ($role !== 'SUPERADMIN' && ($role !== 'MANAGER' || $media->department_id !== $user->department_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Manager dari departemen terkait yang dapat menolak/unapprove media ini.'
+            ], 403);
+        }
+
+        $request->validate([
+            'review_notes' => ['required', 'string', 'min:3', 'max:1000'],
+        ], [
+            'review_notes.required' => 'Catatan review (alasan penolakan) wajib diisi saat unapprove media.',
+            'review_notes.min' => 'Catatan review minimal 3 karakter.',
+        ]);
+
+        $media->update([
+            'approval_status' => 'UNAPPROVED',
+            'review_notes' => $request->string('review_notes'),
+            'approved_by' => $user->id,
+            'approved_at' => now(),
+        ]);
+
+        ActivityLogService::log('UNAPPROVE_MEDIA', $media->id, "Media ditolak (Unapproved) oleh {$user->name}. Catatan: {$request->input('review_notes')}");
+
+        return response()->json([
+            'success' => true,
+            'data' => new MediaResource($media->fresh(['department', 'uploader', 'category', 'approver', 'files'])),
+            'message' => 'Media ditolak (Unapproved) dengan catatan review'
         ], 200);
     }
 
