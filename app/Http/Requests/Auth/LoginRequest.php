@@ -22,6 +22,20 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'email', 'exists:users,email'],
             'password' => ['required'],
+            'captcha_key' => ['required', 'string'],
+            'captcha_code' => ['required', 'string'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.exists' => 'Akun dengan email ini tidak ditemukan.',
+            'password.required' => 'Password wajib diisi.',
+            'captcha_key.required' => 'Sesi captcha tidak valid. Silakan muat ulang captcha.',
+            'captcha_code.required' => 'Kode captcha wajib diisi.',
         ];
     }
 }

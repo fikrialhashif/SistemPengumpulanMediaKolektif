@@ -8,10 +8,15 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Services\ActivityLogService;
 use App\Services\AuthService;
+use App\Services\CaptchaService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -22,11 +27,42 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
+    public function captcha(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => CaptchaService::generate(),
+        ], 200);
+    }
+
     public function login(LoginRequest $request): JsonResponse
     {
         $data = $request->validated();
+        $throttleKey = Str::transliterate(Str::lower($data['email']) . '|' . $request->ip());
+
+        // Perlindungan Brute Force: Maksimal 5 percobaan per menit
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            return response()->json([
+                'success' => false,
+                'message' => "Terlalu banyak percobaan login gagal. Silakan coba lagi dalam {$seconds} detik.",
+                'retry_after' => $seconds,
+            ], 429);
+        }
+
+        // Validasi Captcha
+        if (!CaptchaService::validate($data['captcha_key'] ?? null, $data['captcha_code'] ?? null)) {
+            RateLimiter::hit($throttleKey, 60);
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode captcha salah atau sudah kadaluarsa. Silakan coba lagi.',
+                'errors' => ['captcha_code' => ['Kode captcha salah atau sudah kadaluarsa.']]
+            ], 422);
+        }
+
         try {
             $user = $this->authService->login($data);
+            RateLimiter::clear($throttleKey);
 
             return response()->json([
                 'success' => true,
@@ -34,6 +70,8 @@ class AuthController extends Controller
                 'message' => 'Login successful'
             ], 200);
         } catch (Exception $e) {
+            RateLimiter::hit($throttleKey, 60);
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
@@ -67,6 +105,80 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'data' => new UserResource($user),
+        ], 200);
+    }
+
+    public function updateAccount(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
+            'current_password' => ['nullable', 'string'],
+            'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+        ], [
+            'email.required' => 'Email (username) wajib diisi.',
+            'email.email' => 'Format email (username) tidak valid.',
+            'email.unique' => 'Email (username) sudah digunakan oleh user lain.',
+            'password.min' => 'Password baru minimal 6 karakter.',
+            'password.confirmed' => 'Konfirmasi password baru tidak cocok.',
+        ]);
+
+        $oldEmail = $user->email;
+        $updates = [];
+
+        // Update email / username
+        if ($validated['email'] !== $user->email) {
+            $updates['email'] = $validated['email'];
+        }
+
+        // Update password jika diisi
+        if (!empty($validated['password'])) {
+            if (empty($request->input('current_password'))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Password saat ini wajib diisi untuk mengubah password.',
+                    'errors' => ['current_password' => ['Password saat ini wajib diisi.']]
+                ], 422);
+            }
+
+            if (!Hash::check($request->input('current_password'), $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Password saat ini tidak sesuai.',
+                    'errors' => ['current_password' => ['Password saat ini tidak sesuai.']]
+                ], 422);
+            }
+
+            $updates['password'] = Hash::make($validated['password']);
+        }
+
+        if (empty($updates)) {
+            return response()->json([
+                'success' => true,
+                'data' => new UserResource($user->load(['role', 'department'])),
+                'message' => 'Tidak ada perubahan data.'
+            ], 200);
+        }
+
+        $user->update($updates);
+        $user->load(['role', 'department']);
+
+        $logMsg = "User {$oldEmail} memperbarui akun";
+        if (isset($updates['email'])) $logMsg .= " (email menjadi: {$user->email})";
+        if (isset($updates['password'])) $logMsg .= " (ganti password)";
+        ActivityLogService::log('UPDATE_ACCOUNT', null, $logMsg, $user->id);
+
+        return response()->json([
+            'success' => true,
+            'data' => new UserResource($user),
+            'message' => 'Akun (username/password) berhasil diperbarui.'
         ], 200);
     }
 

@@ -22,8 +22,8 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
-    const res = await authService.login(email, password);
+  const login = async (email, password, captcha_key, captcha_code) => {
+    const res = await authService.login(email, password, captcha_key, captcha_code);
     const { token, ...userData } = res.data.data;
     localStorage.setItem('auth_token', token);
     localStorage.setItem('auth_user', JSON.stringify(userData));
@@ -40,6 +40,11 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const updateUser = (newUserData) => {
+    localStorage.setItem('auth_user', JSON.stringify(newUserData));
+    setUser(newUserData);
+  };
+
   const hasRole = (roles) => {
     if (!user) return false;
     if (typeof roles === 'string') return user.role?.name === roles;
@@ -47,7 +52,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, hasRole, loading }}>
+    <AuthContext.Provider value={{ user, setUser, updateUser, login, logout, hasRole, loading }}>
       {children}
     </AuthContext.Provider>
   );

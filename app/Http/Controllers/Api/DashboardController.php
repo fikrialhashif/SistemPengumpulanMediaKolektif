@@ -25,6 +25,7 @@ class DashboardController extends Controller
             $data['total_approved'] = Media::where('uploaded_by', $user->id)->where('approval_status', 'APPROVED')->count();
             $data['total_unapproved'] = Media::where('uploaded_by', $user->id)->where('approval_status', 'UNAPPROVED')->count();
             $data['total_pending'] = Media::where('uploaded_by', $user->id)->where('approval_status', 'PENDING')->count();
+            $data['total_size'] = Media::where('uploaded_by', $user->id)->sum('file_size');
             
             $data['media_by_category'] = Media::where('uploaded_by', $user->id)
                 ->select('category_id', DB::raw('count(*) as total'))
@@ -41,6 +42,12 @@ class DashboardController extends Controller
                 ->with(['category', 'uploader'])
                 ->latest('created_at')
                 ->take(4)
+                ->get();
+
+            $data['recent_activities'] = ActivityLog::where('user_id', $user->id)
+                ->with('media:id,title')
+                ->latest()
+                ->take(5)
                 ->get();
         } elseif ($role === 'MANAGER') {
             // Manager department dashboard: semua media departemennya
@@ -82,6 +89,24 @@ class DashboardController extends Controller
                 ->latest()
                 ->take(10)
                 ->get();
+
+            // Media approved per kategori
+            $data['media_by_category'] = Media::where('approval_status', 'APPROVED')
+                ->select('category_id', DB::raw('count(*) as total'))
+                ->with('category:id,name')
+                ->groupBy('category_id')
+                ->get();
+
+            // Total ukuran (bytes) seluruh media approved
+            $data['total_size'] = Media::where('approval_status', 'APPROVED')->sum('file_size');
+
+            // Media approved baru dalam 30 hari terakhir
+            $data['new_media_30d'] = Media::where('approval_status', 'APPROVED')
+                ->where('approved_at', '>=', now()->subDays(30))
+                ->count();
+
+            // Total unduhan seluruh user
+            $data['total_downloads'] = ActivityLog::where('action', 'DOWNLOAD_MEDIA')->count();
         } else {
             // SUPERADMIN dashboard
             $data['total_users'] = User::count();

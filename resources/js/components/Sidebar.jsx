@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logo1 from '../../../assets/logo1.png';
+import AccountSettingsModal from './AccountSettingsModal';
 
 export default function Sidebar() {
   const { user, hasRole, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [isMasterOpen, setIsMasterOpen] = useState(
     ['/master/departments', '/master/media-categories'].includes(location.pathname)
   );
@@ -37,10 +39,21 @@ export default function Sidebar() {
           <div className="bg-emerald-800/50 p-4 rounded-xl border border-emerald-700/50 backdrop-blur-sm">
             <p className="text-sm font-semibold text-white truncate">{user?.name}</p>
             <p className="text-xs text-emerald-300 truncate mb-2">{user?.email}</p>
-            <div className="inline-block px-2 py-1 bg-emerald-950 rounded-md">
-              <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
-                {user?.role?.name === 'SUPERADMIN' ? 'SUPERADMIN' : `${user?.role?.name} - ${user?.department?.name}`}
-              </p>
+            <div className="flex items-center justify-between gap-2">
+              <div className="inline-block px-2 py-1 bg-emerald-950 rounded-md">
+                <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
+                  {user?.role?.name === 'SUPERADMIN' ? 'SUPERADMIN' : `${user?.role?.name} - ${user?.department?.name}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAccountModalOpen(true)}
+                title="Ganti Username & Password"
+                className="p-1.5 bg-emerald-700/70 hover:bg-emerald-600 text-white rounded-lg transition-colors flex items-center gap-1 text-[11px] font-semibold"
+              >
+                <span>🔑</span>
+                <span className="hidden xl:inline">Ubah Password</span>
+              </button>
             </div>
           </div>
         )}
@@ -144,6 +157,11 @@ export default function Sidebar() {
           Keluar Sistem
         </button>
       </div>
+
+      <AccountSettingsModal
+        open={accountModalOpen}
+        onClose={() => setAccountModalOpen(false)}
+      />
     </aside>
   );
 }

@@ -1,9 +1,9 @@
 import { useAuth } from '../../contexts/AuthContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dashboardService } from '../../services';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { formatDateTime, formatTime } from '../../utils/format';
+import { formatDateTime, formatTime, formatFileSize } from '../../utils/format';
 
 export default function DashboardPage() {
   const { user, hasRole } = useAuth();
@@ -49,6 +49,12 @@ export default function DashboardPage() {
             icon="⏳"
             color="yellow"
           />
+          <DashboardCard 
+            title="Total Ukuran Media" 
+            value={formatFileSize(data.total_size || 0)} 
+            icon="💾"
+            color="indigo"
+          />
         </div>
       )}
 
@@ -85,21 +91,38 @@ export default function DashboardPage() {
 
       {hasRole('CORSEC') && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <DashboardCard title="Total Media Departemen" value={data.total_media} icon="📊" color="emerald" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <DashboardCard title="Total Media Approved" value={data.total_media} icon="📊" color="emerald" />
             <DashboardCard title="Jumlah Departemen" value={data.media_by_department?.length || 0} icon="🏢" color="yellow" />
-            <DashboardCard title="Media Terbaru" value={data.recent_media?.length || 0} icon="✨" color="teal" />
+            <DashboardCard title="Media Baru (30 Hari)" value={data.new_media_30d || 0} icon="✨" color="teal" />
+            <DashboardCard title="Total Ukuran Media" value={formatFileSize(data.total_size || 0)} icon="💾" color="indigo" />
+            <DashboardCard title="Total Unduhan" value={data.total_downloads || 0} icon="⬇️" color="red" />
+            <DashboardCard title="Jumlah Kategori" value={data.media_by_category?.length || 0} icon="🏷️" color="emerald" />
           </div>
 
-          <BarChartCard
-            title="Ringkasan Media"
-            icon="📊"
-            bars={[
-              { label: 'Total Media Departemen', value: data.total_media, color: 'emerald' },
-              { label: 'Jumlah Departemen', value: data.media_by_department?.length || 0, color: 'yellow' },
-              { label: 'Media Terbaru', value: data.recent_media?.length || 0, color: 'teal' },
-            ]}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+            <LineChartCard
+              title="Media per Departemen"
+              icon="🏢"
+              color="emerald"
+              emptyText="Belum ada media yang disetujui."
+              points={(data.media_by_department || []).map((d) => ({
+                label: d.department?.name || d.department?.code || 'Tanpa Dept',
+                value: Number(d.total) || 0,
+              }))}
+            />
+
+            <LineChartCard
+              title="Media per Kategori"
+              icon="🏷️"
+              color="teal"
+              emptyText="Belum ada media yang disetujui."
+              points={(data.media_by_category || []).map((c) => ({
+                label: c.category?.name || 'Tanpa Kategori',
+                value: Number(c.total) || 0,
+              }))}
+            />
+          </div>
         </>
       )}
 
@@ -108,7 +131,7 @@ export default function DashboardPage() {
           <DashboardCard title="Total User Aktif" value={data.total_users} icon="👥" color="emerald" />
           <DashboardCard title="Total Departemen" value={data.total_departments} icon="🏢" color="yellow" />
           <DashboardCard title="Total Media" value={data.total_media} icon="📁" color="teal" />
-          <DashboardCard title="Media Terhapus" value={data.total_deleted_media} icon="🗑️" color="red" />
+          <DashboardCard title="Media Terhapus=" value={data.total_deleted_media} icon="🗑️" color="red" />
         </div>
       )}
 
@@ -223,6 +246,45 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {hasRole('USER') && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+          <LineChartCard
+            title="Media Saya per Kategori"
+            icon="🏷️"
+            color="emerald"
+            emptyText="Anda belum mengunggah media."
+            points={(data.media_by_category || []).map((c) => ({
+              label: c.category?.name || 'Tanpa Kategori',
+              value: Number(c.total) || 0,
+            }))}
+          />
+
+          <Card title="Aktivitas Terakhir Saya" icon="🕒">
+            <ul className="divide-y divide-emerald-50">
+              {(data.recent_activities || []).map((a) => (
+                <li key={a.id} className="py-3 flex justify-between items-start group hover:bg-emerald-50/50 px-2 rounded-lg transition-colors -mx-2">
+                  <div className="flex items-start space-x-3">
+                    <div className="mt-0.5 w-2 h-2 rounded-full bg-emerald-400"></div>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-sm text-slate-800">{a.action}</span>
+                      {a.media?.title && (
+                        <span className="text-slate-500 text-xs mt-0.5 line-clamp-1">{a.media.title}</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 whitespace-nowrap ml-2">
+                    {formatDateTime(a.created_at)}
+                  </span>
+                </li>
+              ))}
+              {(!data.recent_activities || data.recent_activities.length === 0) && (
+                <li className="py-8 text-center text-sm text-slate-400">Belum ada aktivitas tercatat.</li>
+              )}
+            </ul>
+          </Card>
+        </div>
+      )}
+
       {hasRole('SUPERADMIN') && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
           <Card title="Upload Media Terbaru" icon="✨">
@@ -278,6 +340,7 @@ function DashboardCard({ title, value, icon, color = 'emerald' }) {
     yellow: 'bg-yellow-50 text-yellow-600 border-yellow-100',
     teal: 'bg-teal-50 text-teal-600 border-teal-100',
     red: 'bg-red-50 text-red-600 border-red-100',
+    indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
   };
 
   return (
@@ -286,7 +349,7 @@ function DashboardCard({ title, value, icon, color = 'emerald' }) {
       <div className="relative flex justify-between items-start">
         <div>
           <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-          <p className="text-4xl font-extrabold text-slate-800 tracking-tight">{value}</p>
+          <p className={`font-extrabold text-slate-800 tracking-tight ${typeof value === 'number' ? 'text-4xl' : 'text-2xl'}`}>{value}</p>
         </div>
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${colorStyles[color]} shadow-sm`}>
           {icon}
@@ -308,38 +371,95 @@ function Card({ title, icon, children }) {
   );
 }
 
-function BarChartCard({ title, icon, bars }) {
-  const colorClasses = {
-    emerald: 'bg-emerald-500',
-    yellow: 'bg-yellow-500',
-    teal: 'bg-teal-500',
-    red: 'bg-red-500',
-  };
+function LineChartCard({ title, icon, color = 'emerald', points = [], emptyText = 'Belum ada data.' }) {
+  const gradientId = useId().replace(/:/g, '');
 
-  const maxValue = Math.max(...bars.map(b => b.value), 1);
+  const strokeMap = {
+    emerald: '#10b981',
+    teal: '#14b8a6',
+    indigo: '#6366f1',
+    yellow: '#f59e0b',
+    red: '#f43f5e',
+  };
+  const stroke = strokeMap[color] || strokeMap.emerald;
+
+  const data = points.filter((p) => p && p.value != null);
+
+  const W = 600;
+  const H = 260;
+  const padL = 34;
+  const padR = 18;
+  const padT = 24;
+  const padB = 54;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const stepY = Math.max(1, Math.ceil(Math.max(...data.map((d) => d.value), 1) / 4));
+  const top = stepY * 4;
+
+  const x = (i) => (data.length <= 1 ? padL + innerW / 2 : padL + (innerW * i) / (data.length - 1));
+  const y = (v) => padT + innerH * (1 - v / top);
+  const baseY = padT + innerH;
+
+  const linePts = data.map((d, i) => `${x(i).toFixed(1)},${y(d.value).toFixed(1)}`).join(' ');
+  const areaPath =
+    data.length === 0
+      ? ''
+      : `M ${x(0).toFixed(1)},${baseY.toFixed(1)} ` +
+        data.map((d, i) => `L ${x(i).toFixed(1)},${y(d.value).toFixed(1)}`).join(' ') +
+        ` L ${x(data.length - 1).toFixed(1)},${baseY.toFixed(1)} Z`;
+
+  const truncate = (s, n = 9) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+  const rotateLabels = data.length > 4;
 
   return (
     <Card title={title} icon={icon}>
-      <div className="space-y-6">
-        {bars.map((bar, idx) => (
-          <div key={bar.label}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-slate-600">{bar.label}</span>
-              <span className="text-sm font-bold text-slate-800">{bar.value}</span>
-            </div>
-            <div className="relative">
-              <div className="h-8 bg-slate-100 rounded-lg overflow-hidden">
-                <div
-                  className={`h-full rounded-lg ${colorClasses[bar.color] || 'bg-emerald-500'} transition-all duration-500 flex items-center justify-end pr-2`}
-                  style={{ width: `${(bar.value / maxValue) * 100}%` }}
+      {data.length === 0 ? (
+        <div className="py-8 text-center text-sm text-slate-400">{emptyText}</div>
+      ) : (
+        <div className="w-full">
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet" role="img" aria-label={title}>
+            <defs>
+              <linearGradient id={`grad-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={stroke} stopOpacity="0.28" />
+                <stop offset="100%" stopColor={stroke} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+
+            {[0, 1, 2, 3, 4].map((k) => {
+              const val = stepY * k;
+              const gy = y(val);
+              return (
+                <g key={k}>
+                  <line x1={padL} y1={gy} x2={W - padR} y2={gy} stroke="#e2e8f0" strokeWidth="1" strokeDasharray={k === 0 ? '0' : '4 4'} />
+                  <text x={padL - 8} y={gy + 4} textAnchor="end" fontSize="11" fill="#94a3b8">{val}</text>
+                </g>
+              );
+            })}
+
+            {areaPath && <path d={areaPath} fill={`url(#grad-${gradientId})`} />}
+            {data.length > 1 && <polyline points={linePts} fill="none" stroke={stroke} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />}
+
+            {data.map((d, i) => (
+              <g key={d.label + i}>
+                <circle cx={x(i)} cy={y(d.value)} r="4.5" fill="#ffffff" stroke={stroke} strokeWidth="2.5">
+                  <title>{`${d.label}: ${d.value}`}</title>
+                </circle>
+                <text x={x(i)} y={y(d.value) - 12} textAnchor="middle" fontSize="11" fontWeight="700" fill="#334155">{d.value}</text>
+                <text
+                  x={x(i)}
+                  y={baseY + 18}
+                  textAnchor={rotateLabels ? 'end' : 'middle'}
+                  fontSize="10.5"
+                  fill="#64748b"
+                  transform={rotateLabels ? `rotate(-35 ${x(i)} ${baseY + 18})` : undefined}
                 >
-                  <span className="text-white text-xs font-bold">{bar.value}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+                  {truncate(String(d.label), rotateLabels ? 14 : 10)}
+                </text>
+              </g>
+            ))}
+          </svg>
+        </div>
+      )}
     </Card>
   );
 }

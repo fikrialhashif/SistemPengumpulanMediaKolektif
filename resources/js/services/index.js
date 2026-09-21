@@ -1,9 +1,12 @@
 import api from './api';
 
 export const authService = {
-  login: (email, password) => api.post('/login', { email, password }),
+  getCaptcha: () => api.get('/captcha'),
+  login: (email, password, captcha_key, captcha_code) =>
+    api.post('/login', { email, password, captcha_key, captcha_code }),
   logout: () => api.post('/logout'),
   me: () => api.get('/me'),
+  updateAccount: (data) => api.put('/me/account', data),
 };
 
 export const mediaService = {

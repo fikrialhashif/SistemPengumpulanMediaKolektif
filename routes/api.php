@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
+Route::get('/captcha', [AuthController::class, 'captcha']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
@@ -17,6 +18,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/me/account', [AuthController::class, 'updateAccount']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Dashboard

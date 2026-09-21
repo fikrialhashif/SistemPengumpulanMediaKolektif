@@ -1,27 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
+import { authService } from '../../services';
 import logo from '../../../../assets/logo.png';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [captchaCode, setCaptchaCode] = useState('');
+  const [captchaKey, setCaptchaKey] = useState('');
+  const [captchaSvg, setCaptchaSvg] = useState('');
+  const [captchaLoading, setCaptchaLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
 
+  const loadCaptcha = async () => {
+    setCaptchaLoading(true);
+    try {
+      const res = await authService.getCaptcha();
+      if (res.data?.success) {
+        setCaptchaKey(res.data.data.captcha_key);
+        setCaptchaSvg(res.data.data.captcha_svg);
+        setCaptchaCode('');
+      }
+    } catch (e) {
+      toast.error('Gagal memuat captcha. Silakan coba lagi.');
+    } finally {
+      setCaptchaLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCaptcha();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, captchaKey, captchaCode.trim());
       toast.success('Login berhasil');
       navigate('/dashboard');
     } catch (err) {
       const msg = err.response?.data?.message || 'Login gagal';
       toast.error(msg);
+      // Refresh captcha setiap kali gagal login
+      loadCaptcha();
     } finally {
       setLoading(false);
     }
@@ -79,6 +106,49 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                 placeholder="••••••••"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Captcha Section */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-semibold text-slate-700">
+                Kode Keamanan (Captcha)
+              </label>
+              <span className="text-[11px] text-emerald-700 font-medium">Anti Brute-Force</span>
+            </div>
+
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <div
+                className="flex-1 h-12 rounded-xl overflow-hidden flex items-center justify-center shadow-inner"
+                dangerouslySetInnerHTML={{
+                  __html: captchaSvg || '<span class="text-xs text-slate-400 font-medium">Memuat kode...</span>',
+                }}
+              />
+              <button
+                type="button"
+                onClick={loadCaptcha}
+                disabled={captchaLoading}
+                title="Ganti gambar captcha"
+                className="h-12 w-12 rounded-xl bg-white border border-emerald-200 hover:bg-emerald-50 text-emerald-700 flex items-center justify-center transition shadow-sm hover:scale-105 active:scale-95 disabled:opacity-50 flex-shrink-0"
+              >
+                <span className={`text-base ${captchaLoading ? 'animate-spin' : ''}`}>🔄</span>
+              </button>
+            </div>
+
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <input
+                type="text"
+                value={captchaCode}
+                onChange={(e) => setCaptchaCode(e.target.value.toUpperCase())}
+                maxLength={6}
+                className="w-full pl-10 pr-4 py-3 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 tracking-widest font-bold uppercase transition-all"
+                placeholder="Ketik 5 kode di atas"
                 required
               />
             </div>

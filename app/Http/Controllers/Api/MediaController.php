@@ -456,7 +456,7 @@ class MediaController extends Controller
         ]);
 
         $media->update([
-            'approval_status' => 'UNAPPROVED',
+            'approval_status' => 'PENDING',
             'review_notes' => $request->string('review_notes'),
             'approved_by' => $user->id,
             'approved_at' => now(),
@@ -467,7 +467,7 @@ class MediaController extends Controller
         return response()->json([
             'success' => true,
             'data' => new MediaResource($media->fresh(['department', 'uploader', 'category', 'approver', 'files'])),
-            'message' => 'Media ditolak (Unapproved) dengan catatan review'
+            'message' => 'Media dikembalikan ke status Pending (perlu review ulang) dengan catatan review.'
         ], 200);
     }
 

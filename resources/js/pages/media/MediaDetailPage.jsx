@@ -123,7 +123,7 @@ export default function MediaDetailPage() {
     try {
       const res = await mediaService.unapprove(id, { review_notes: reviewNotes.trim() });
       setMedia(res.data.data);
-      toast.warning('Media ditolak (Unapproved) dengan catatan review.');
+      toast.warning('Media dikembalikan ke status Pending untuk review ulang.');
       setUnapproveModalOpen(false);
       setReviewNotes('');
     } catch (e) {
@@ -154,8 +154,9 @@ export default function MediaDetailPage() {
           {file.file_type === 'application/pdf' ? '📄' : '📁'}
         </span>
         <p className="text-emerald-800 font-medium text-center px-4 line-clamp-2">{file.file_name}</p>
-        <button onClick={() => handleDownloadFile(file)} className="mt-4 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 shadow-sm transition-colors">
-          Download File
+        <button onClick={() => handleDownloadFile(file)} className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 shadow-sm transition-colors">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          Unduh
         </button>
       </div>
     );
@@ -235,18 +236,29 @@ export default function MediaDetailPage() {
               <button
                 onClick={handleApprove}
                 disabled={approving}
-                className="flex items-center bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
               >
-                {approving ? 'Memproses...' : '✓ Setujui Media'}
+                {approving ? (
+                  <>
+                    <svg className="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Proses...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                    Setujui
+                  </>
+                )}
               </button>
             )}
-            {media.approval_status !== 'UNAPPROVED' && (
+            {media.approval_status === 'PENDING' && (
               <button
                 onClick={() => setUnapproveModalOpen(true)}
                 disabled={unapproving}
-                className="flex items-center bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
               >
-                ✕ Tolak (Unapprove)
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                Tolak
               </button>
             )}
           </div>
@@ -267,25 +279,25 @@ export default function MediaDetailPage() {
           { (media.uploaded_by === user.id || hasRole(['SUPERADMIN', 'CORSEC'])) && (
             <button 
               onClick={() => navigate(`/media/${id}/edit`)} 
-              className="flex items-center bg-white border-2 border-emerald-100 text-emerald-700 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 bg-white border-2 border-emerald-100 text-emerald-700 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm"
             >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-              Edit Media
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+              Edit
             </button>
           )}
           <button 
             onClick={handleDownload} 
-            className="flex items-center bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:from-emerald-600 hover:to-teal-700 transition-all shadow-md hover:shadow-lg"
+            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:from-emerald-600 hover:to-teal-700 transition-all shadow-md hover:shadow-lg"
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-            Download {files.length > 1 ? 'Semua' : ''}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Unduh{files.length > 1 ? ' Semua' : ''}
           </button>
           { (media.uploaded_by === user.id || hasRole(['SUPERADMIN', 'CORSEC'])) && (
             <button 
               onClick={() => setConfirmDelete(true)} 
-              className="flex items-center bg-white border-2 border-red-100 text-red-600 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-50 hover:border-red-200 transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 bg-white border-2 border-red-100 text-red-600 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-50 hover:border-red-200 transition-all shadow-sm"
             >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
               Hapus
             </button>
           )}
