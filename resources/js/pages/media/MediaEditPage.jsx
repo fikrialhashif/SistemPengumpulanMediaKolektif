@@ -4,6 +4,7 @@ import { mediaService, masterService } from '../../services';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { formatDateTime } from '../../utils/format';
 
 export default function MediaEditPage() {
   const { id } = useParams();
@@ -18,6 +19,7 @@ export default function MediaEditPage() {
     title: '', description: '', category_id: '', department_id: '', event_date: ''
   });
   const [files, setFiles] = useState(null);
+  const [mediaData, setMediaData] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -26,6 +28,7 @@ export default function MediaEditPage() {
       masterService.departments()
     ]).then(([mRes, cRes, dRes]) => {
       const m = mRes.data.data;
+      setMediaData(m);
       setFormData({
         title: m.title,
         description: m.description || '',
@@ -65,8 +68,8 @@ export default function MediaEditPage() {
     }
 
     try {
-      await mediaService.update(id, data);
-      toast.success('Media berhasil diperbarui');
+      const res = await mediaService.update(id, data);
+      toast.success(res.data?.message || 'Media berhasil diperbarui');
       navigate(`/media/${id}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Gagal memperbarui media');
@@ -106,6 +109,27 @@ export default function MediaEditPage() {
           </div>
         </div>
       </div>
+
+      {mediaData?.approval_status === 'UNAPPROVED' && mediaData?.review_notes && (
+        <div className="bg-rose-50/80 border border-rose-200 text-rose-900 p-5 rounded-2xl shadow-sm mb-2">
+          <div className="flex items-start space-x-3">
+            <span className="text-2xl">❌</span>
+            <div>
+              <h4 className="font-bold text-sm">Media Ditolak - Perlu Revisi</h4>
+              <p className="text-xs mt-1 opacity-80">Perbaiki media sesuai catatan review dari manager. Setelah disimpan, status akan kembali ke Pending untuk review ulang.</p>
+              <div className="mt-3 p-3 rounded-xl bg-white/80 border border-rose-200 text-xs">
+                <span className="font-bold block mb-1">📝 Catatan Review Manager:</span>
+                <p className="whitespace-pre-wrap">{mediaData.review_notes}</p>
+                {mediaData.approver && (
+                  <span className="block mt-1 text-[11px] opacity-75">
+                    Oleh: {mediaData.approver.name} {mediaData.approved_at ? `(${formatDateTime(mediaData.approved_at)})` : ''}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

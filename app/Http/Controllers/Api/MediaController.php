@@ -129,7 +129,7 @@ class MediaController extends Controller
 
     public function show(Request $request, $id)
     {
-        $media = Media::with(['department', 'uploader', 'category', 'files'])->findOrFail($id);
+        $media = Media::with(['department', 'uploader', 'category', 'files', 'approver'])->findOrFail($id);
         $user = $request->user();
 
         if (!$this->userCanAccess($media, $user)) {
@@ -198,14 +198,28 @@ class MediaController extends Controller
             $request->merge(['department_id' => $media->department_id]);
         }
 
+        $wasUnapproved = $media->approval_status === 'UNAPPROVED';
+
         $media = $this->mediaService->update($media, $request->validated(), $request->file('files'));
+
+        if ($wasUnapproved) {
+            $media->update([
+                'approval_status' => 'PENDING',
+                'review_notes' => null,
+                'approved_by' => null,
+                'approved_at' => null,
+            ]);
+            $media = $media->fresh();
+        }
 
         ActivityLogService::log('UPDATE_MEDIA', $media->id, "Update media: {$media->title}");
 
         return response()->json([
             'success' => true,
-            'data' => new MediaResource($media->load('files')),
-            'message' => 'Media berhasil diperbarui'
+            'data' => new MediaResource($media->load(['department', 'uploader', 'category', 'approver', 'files'])),
+            'message' => $wasUnapproved
+                ? 'Media berhasil diperbarui. Status dikembalikan ke Pending untuk review ulang oleh Manager.'
+                : 'Media berhasil diperbarui'
         ], 200);
     }
 
@@ -456,7 +470,7 @@ class MediaController extends Controller
         ]);
 
         $media->update([
-            'approval_status' => 'PENDING',
+            'approval_status' => 'UNAPPROVED',
             'review_notes' => $request->string('review_notes'),
             'approved_by' => $user->id,
             'approved_at' => now(),
@@ -467,7 +481,7 @@ class MediaController extends Controller
         return response()->json([
             'success' => true,
             'data' => new MediaResource($media->fresh(['department', 'uploader', 'category', 'approver', 'files'])),
-            'message' => 'Media dikembalikan ke status Pending (perlu review ulang) dengan catatan review.'
+            'message' => 'Media ditolak (Unapproved) dengan catatan review.'
         ], 200);
     }
 

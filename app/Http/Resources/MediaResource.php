@@ -18,6 +18,8 @@ class MediaResource extends JsonResource
             'file_path' => $this->file_path,
             'file_type' => $this->file_type,
             'file_size' => $this->file_size,
+            'uploaded_by' => $this->uploaded_by,
+            'department_id' => $this->department_id,
             'approval_status' => $this->approval_status ?? 'PENDING',
             'review_notes' => $this->review_notes,
             'approved_by' => $this->approved_by,

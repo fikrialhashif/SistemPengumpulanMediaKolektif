@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('file_path');
             $table->string('file_type');
             $table->unsignedBigInteger('file_size');
+            $table->enum('status', ['PENDING', 'APPROVED', 'REJECTED'])->default('PENDING');
             $table->timestamps();
             $table->softDeletes();
 

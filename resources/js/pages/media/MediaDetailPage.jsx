@@ -123,7 +123,7 @@ export default function MediaDetailPage() {
     try {
       const res = await mediaService.unapprove(id, { review_notes: reviewNotes.trim() });
       setMedia(res.data.data);
-      toast.warning('Media dikembalikan ke status Pending untuk review ulang.');
+      toast.warning('Media ditolak (Unapproved). Uploader dapat merevisi media ini.');
       setUnapproveModalOpen(false);
       setReviewNotes('');
     } catch (e) {
@@ -226,6 +226,15 @@ export default function MediaDetailPage() {
                 )}
               </div>
             )}
+            {media.approval_status === 'UNAPPROVED' && media.uploaded_by === user.id && (
+              <button
+                onClick={() => navigate(`/media/${id}/edit`)}
+                className="mt-3 inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                Edit & Revisi Media
+              </button>
+            )}
           </div>
         </div>
 
@@ -251,7 +260,7 @@ export default function MediaDetailPage() {
                 )}
               </button>
             )}
-            {media.approval_status === 'PENDING' && (
+            {(media.approval_status === 'PENDING' || media.approval_status === 'APPROVED') && (
               <button
                 onClick={() => setUnapproveModalOpen(true)}
                 disabled={unapproving}
