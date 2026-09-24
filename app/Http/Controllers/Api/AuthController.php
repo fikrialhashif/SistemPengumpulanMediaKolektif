@@ -113,29 +113,26 @@ class AuthController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'email' => [
+            'name' => [
                 'required',
                 'string',
-                'email',
                 'max:255',
-                Rule::unique('users', 'email')->ignore($user->id),
             ],
             'current_password' => ['nullable', 'string'],
             'password' => ['nullable', 'string', 'min:6', 'confirmed'],
         ], [
-            'email.required' => 'Email (username) wajib diisi.',
-            'email.email' => 'Format email (username) tidak valid.',
-            'email.unique' => 'Email (username) sudah digunakan oleh user lain.',
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'name.max' => 'Nama maksimal 255 karakter.',
             'password.min' => 'Password baru minimal 6 karakter.',
             'password.confirmed' => 'Konfirmasi password baru tidak cocok.',
         ]);
 
-        $oldEmail = $user->email;
+        $oldName = $user->name;
         $updates = [];
 
-        // Update email / username
-        if ($validated['email'] !== $user->email) {
-            $updates['email'] = $validated['email'];
+        // Update name
+        if ($validated['name'] !== $user->name) {
+            $updates['name'] = $validated['name'];
         }
 
         // Update password jika diisi
@@ -170,15 +167,15 @@ class AuthController extends Controller
         $user->update($updates);
         $user->load(['role', 'department']);
 
-        $logMsg = "User {$oldEmail} memperbarui akun";
-        if (isset($updates['email'])) $logMsg .= " (email menjadi: {$user->email})";
+        $logMsg = "User {$user->email} memperbarui akun";
+        if (isset($updates['name'])) $logMsg .= " (nama diubah dari: {$oldName} menjadi: {$user->name})";
         if (isset($updates['password'])) $logMsg .= " (ganti password)";
         ActivityLogService::log('UPDATE_ACCOUNT', null, $logMsg, $user->id);
 
         return response()->json([
             'success' => true,
             'data' => new UserResource($user),
-            'message' => 'Akun (username/password) berhasil diperbarui.'
+            'message' => 'Akun (nama/password) berhasil diperbarui.'
         ], 200);
     }
 

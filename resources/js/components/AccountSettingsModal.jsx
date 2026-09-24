@@ -8,7 +8,7 @@ export default function AccountSettingsModal({ open, onClose }) {
   const { user, updateUser } = useAuth();
   const toast = useToast();
 
-  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
@@ -17,7 +17,7 @@ export default function AccountSettingsModal({ open, onClose }) {
 
   useEffect(() => {
     if (open) {
-      setEmail(user?.email || '');
+      setName(user?.name || '');
       setCurrentPassword('');
       setPassword('');
       setPasswordConfirmation('');
@@ -33,7 +33,7 @@ export default function AccountSettingsModal({ open, onClose }) {
     setErrors({});
 
     const payload = {
-      email: email.trim(),
+      name: name.trim(),
     };
 
     if (password) {
@@ -76,7 +76,7 @@ export default function AccountSettingsModal({ open, onClose }) {
             <span className="text-2xl">⚙️</span>
             <div>
               <h3 className="font-bold text-base leading-tight">Pengaturan Akun</h3>
-              <p className="text-xs text-emerald-100">Ubah username (email) & kata sandi</p>
+              <p className="text-xs text-emerald-100">Ubah nama & kata sandi</p>
             </div>
           </div>
           <button
@@ -93,24 +93,24 @@ export default function AccountSettingsModal({ open, onClose }) {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
-              Username / Email <span className="text-rose-500">*</span>
+              Nama Lengkap <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2.5 text-slate-400 text-sm pointer-events-none select-none">✉️</span>
+              <span className="absolute left-3 top-2.5 text-slate-400 text-sm pointer-events-none select-none">👤</span>
               <input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="nama@email.com"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Masukkan nama lengkap"
                 className={`w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border rounded-xl outline-none transition focus:bg-white focus:ring-2 ${
-                  errors.email
+                  errors.name
                     ? 'border-rose-300 focus:ring-rose-400 focus:border-rose-400'
                     : 'border-slate-200 focus:ring-emerald-500 focus:border-emerald-500'
                 }`}
               />
             </div>
-            {errors.email && <p className="text-xs text-rose-500 mt-1">{errors.email[0]}</p>}
+            {errors.name && <p className="text-xs text-rose-500 mt-1">{errors.name[0]}</p>}
           </div>
 
           <div className="pt-2 border-t border-slate-100">

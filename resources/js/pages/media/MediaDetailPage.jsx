@@ -180,7 +180,7 @@ export default function MediaDetailPage() {
     );
   };
 
-  const isApprover = hasRole('SUPERADMIN') || (hasRole('MANAGER') && media.department_id === user.department_id);
+  const isApprover = hasRole('SUPERADMIN') || (hasRole('MANAGER') && media.department_id === user?.department?.id);
 
   return (
     <>
@@ -241,7 +241,7 @@ export default function MediaDetailPage() {
         {/* Action Buttons for Approver (Manager of Dept or Superadmin) */}
         {isApprover && (
           <div className="flex items-center gap-2 self-end md:self-center flex-shrink-0">
-            {media.approval_status !== 'APPROVED' && (
+            {(media.approval_status === 'PENDING' || media.approval_status === 'UNAPPROVED') && (
               <button
                 onClick={handleApprove}
                 disabled={approving}
@@ -255,7 +255,7 @@ export default function MediaDetailPage() {
                 ) : (
                   <>
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                    Setujui
+                    {media.approval_status === 'UNAPPROVED' ? 'Setujui Revisi' : 'Setujui'}
                   </>
                 )}
               </button>
