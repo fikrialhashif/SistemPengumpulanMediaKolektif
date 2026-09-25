@@ -260,7 +260,7 @@ export default function MediaDetailPage() {
                 )}
               </button>
             )}
-            {(media.approval_status === 'PENDING' || media.approval_status === 'APPROVED') && (
+            {media.approval_status === 'PENDING' && (
               <button
                 onClick={() => setUnapproveModalOpen(true)}
                 disabled={unapproving}

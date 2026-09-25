@@ -131,7 +131,7 @@ export default function DashboardPage() {
           <DashboardCard title="Total User Aktif" value={data.total_users} icon="👥" color="emerald" />
           <DashboardCard title="Total Departemen" value={data.total_departments} icon="🏢" color="yellow" />
           <DashboardCard title="Total Media" value={data.total_media} icon="📁" color="teal" />
-          <DashboardCard title="Media Terhapus=" value={data.total_deleted_media} icon="🗑️" color="red" />
+          <DashboardCard title="Media Terhapus" value={data.total_deleted_media} icon="🗑️" color="red" />
         </div>
       )}
 
