@@ -1,7 +1,7 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { useEffect, useState, useId } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { dashboardService } from '../../services';
+import { dashboardService, masterService } from '../../services';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatDateTime, formatTime, formatFileSize } from '../../utils/format';
 
@@ -10,12 +10,25 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [departments, setDepartments] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   useEffect(() => {
     dashboardService.stats().then((res) => {
       setData(res.data.data);
       setLoading(false);
     });
+    
+    if (hasRole('CORSEC')) {
+      masterService.departments().then((res) => {
+        setDepartments(res.data.data);
+      });
+      masterService.categories().then((res) => {
+        setCategories(res.data.data);
+      });
+    }
   }, []);
 
   if (loading) return <LoadingSpinner fullScreen />;
@@ -101,26 +114,32 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-            <LineChartCard
+            <PieChartCard
               title="Media per Departemen"
               icon="🏢"
-              color="emerald"
-              emptyText="Belum ada media yang disetujui."
-              points={(data.media_by_department || []).map((d) => ({
+              data={(data.media_by_department || []).map((d) => ({
                 label: d.department?.name || d.department?.code || 'Tanpa Dept',
                 value: Number(d.total) || 0,
+                department_id: d.department_id,
               }))}
+              emptyText="Belum ada media yang disetujui."
+              departments={departments}
+              selectedDepartment={selectedDepartment}
+              onDepartmentChange={setSelectedDepartment}
             />
 
-            <LineChartCard
+            <BarChartCard
               title="Media per Kategori"
               icon="🏷️"
-              color="teal"
-              emptyText="Belum ada media yang disetujui."
-              points={(data.media_by_category || []).map((c) => ({
+              data={(data.media_by_category || []).map((c) => ({
                 label: c.category?.name || 'Tanpa Kategori',
                 value: Number(c.total) || 0,
+                category_id: c.category_id,
               }))}
+              emptyText="Belum ada media yang disetujui."
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
             />
           </div>
         </>
@@ -458,6 +477,181 @@ function LineChartCard({ title, icon, color = 'emerald', points = [], emptyText 
               </g>
             ))}
           </svg>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function PieChartCard({ title, icon, data = [], emptyText = 'Belum ada data.', departments = [], selectedDepartment = '', onDepartmentChange }) {
+  const colors = [
+    '#10b981', '#14b8a6', '#f59e0b', '#f43f5e', '#6366f1', 
+    '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316',
+    '#a855f7', '#22c55e', '#eab308'
+  ];
+
+  const filteredData = selectedDepartment 
+    ? data.filter(d => String(d.department_id) === String(selectedDepartment))
+    : data;
+
+  const chartData = filteredData.filter((p) => p && p.value != null && p.value > 0);
+  const total = chartData.reduce((sum, d) => sum + d.value, 0);
+
+  let currentAngle = -90;
+  const slices = chartData.map((d, i) => {
+    const percentage = (d.value / total) * 100;
+    const angle = (d.value / total) * 360;
+    const startAngle = currentAngle;
+    const endAngle = currentAngle + angle;
+    currentAngle = endAngle;
+
+    const startRad = (startAngle * Math.PI) / 180;
+    const endRad = (endAngle * Math.PI) / 180;
+    const cx = 150;
+    const cy = 150;
+    const r = 120;
+
+    const x1 = cx + r * Math.cos(startRad);
+    const y1 = cy + r * Math.sin(startRad);
+    const x2 = cx + r * Math.cos(endRad);
+    const y2 = cy + r * Math.sin(endRad);
+
+    const largeArc = angle > 180 ? 1 : 0;
+    const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+
+    return {
+      path,
+      color: colors[i % colors.length],
+      label: d.label,
+      value: d.value,
+      percentage: percentage.toFixed(1),
+    };
+  });
+
+  return (
+    <Card title={title} icon={icon}>
+      {/* Filter Dropdown */}
+      <div className="mb-4">
+        <select
+          value={selectedDepartment}
+          onChange={(e) => onDepartmentChange(e.target.value)}
+          className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-4 pr-8 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all cursor-pointer"
+        >
+          <option value="">🏢 Semua Departemen</option>
+          {departments.map((d) => (
+            <option key={d.id} value={d.id}>{d.name}</option>
+          ))}
+        </select>
+      </div>
+
+      {chartData.length === 0 ? (
+        <div className="py-8 text-center text-sm text-slate-400">{emptyText}</div>
+      ) : (
+        <div className="flex flex-col lg:flex-row items-center gap-6">
+          {/* Pie Chart */}
+          <div className="flex-shrink-0">
+            <svg width="300" height="300" viewBox="0 0 300 300" className="drop-shadow-sm">
+              {slices.map((slice, i) => (
+                <g key={i}>
+                  <path d={slice.path} fill={slice.color} stroke="#ffffff" strokeWidth="2" className="hover:opacity-80 transition-opacity cursor-pointer">
+                    <title>{`${slice.label}: ${slice.value} (${slice.percentage}%)`}</title>
+                  </path>
+                </g>
+              ))}
+              {/* Center Circle for Donut Effect */}
+              <circle cx="150" cy="150" r="60" fill="white" />
+              <text x="150" y="145" textAnchor="middle" fontSize="28" fontWeight="bold" fill="#334155">{total}</text>
+              <text x="150" y="165" textAnchor="middle" fontSize="12" fill="#94a3b8">Total Media</text>
+            </svg>
+          </div>
+
+          {/* Legend */}
+          <div className="flex-1 w-full">
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {slices.map((slice, i) => (
+                <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-4 h-4 rounded-sm flex-shrink-0" style={{ backgroundColor: slice.color }}></div>
+                    <span className="text-sm font-medium text-slate-700 truncate" title={slice.label}>{slice.label}</span>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-sm font-bold text-slate-800">{slice.value}</span>
+                    <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2 py-1 rounded">{slice.percentage}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function BarChartCard({ title, icon, data = [], emptyText = 'Belum ada data.', categories = [], selectedCategory = '', onCategoryChange }) {
+  const filteredData = selectedCategory 
+    ? data.filter(d => String(d.category_id) === String(selectedCategory))
+    : data;
+
+  const chartData = filteredData.filter((p) => p && p.value != null && p.value > 0);
+  const maxValue = Math.max(...chartData.map(d => d.value), 1);
+
+  const colors = [
+    '#14b8a6', '#10b981', '#06b6d4', '#8b5cf6', '#f59e0b',
+    '#f43f5e', '#6366f1', '#ec4899', '#84cc16', '#f97316'
+  ];
+
+  return (
+    <Card title={title} icon={icon}>
+      {/* Filter Dropdown */}
+      <div className="mb-4">
+        <select
+          value={selectedCategory}
+          onChange={(e) => onCategoryChange(e.target.value)}
+          className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-4 pr-8 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer"
+        >
+          <option value="">🏷️ Semua Kategori</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </div>
+
+      {chartData.length === 0 ? (
+        <div className="py-8 text-center text-sm text-slate-400">{emptyText}</div>
+      ) : (
+        <div className="w-full">
+          <div className="space-y-4">
+            {chartData.map((item, i) => {
+              const percentage = (item.value / maxValue) * 100;
+              const color = colors[i % colors.length];
+              
+              return (
+                <div key={i} className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-semibold text-slate-700 truncate flex-1 mr-4" title={item.label}>
+                      {item.label}
+                    </span>
+                    <span className="font-bold text-slate-800 flex-shrink-0">{item.value}</span>
+                  </div>
+                  <div className="relative w-full h-8 bg-slate-100 rounded-lg overflow-hidden">
+                    <div 
+                      className="h-full rounded-lg transition-all duration-500 ease-out flex items-center justify-end pr-3"
+                      style={{ 
+                        width: `${percentage}%`,
+                        backgroundColor: color,
+                        minWidth: item.value > 0 ? '32px' : '0'
+                      }}
+                    >
+                      <span className="text-xs font-bold text-white drop-shadow">
+                        {percentage.toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </Card>
